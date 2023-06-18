@@ -8,11 +8,12 @@ add_library(newton_fractal STATIC
         newton_equation_base.h
         newton_equation.hpp
 
-        )
+        mpc_support.h)
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
 
+find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)
 find_package(fractal_utils COMPONENTS
         core_utils
@@ -25,7 +26,7 @@ target_link_libraries(newton_fractal PUBLIC
         tl::expected
         fractal_utils::core_utils
         fractal_utils::multiprecision_utils
-
+        OpenMP::OpenMP_CXX
         )
 
 

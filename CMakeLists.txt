@@ -10,6 +10,7 @@ endif ()
 
 include(cmake/configure_3rdParty.cmake)
 
+find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)
 find_package(fractal_utils COMPONENTS
         core_utils

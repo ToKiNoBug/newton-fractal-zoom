@@ -22,6 +22,9 @@
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
 #include <boost/multiprecision/mpfr.hpp>
 #include <boost/multiprecision/mpc.hpp>
+
+#include "mpc_support.h"
+
 #endif
 
 namespace fu = fractal_utils;

@@ -31,16 +31,19 @@ void compute_norm2(const complex_t& a, complex_t& b) noexcept {
 template <typename complex_t>
 using point_list = std::vector<complex_t>;
 
-template <typename complex_t>
+template <typename complex_t, typename real_t = complex_t::value_type>
 class newton_equation : public newton_equation_base {
  private:
   // [a,b,c] <-> z^3 + az^2 + bz + c = 0
   std::vector<complex_t> _parameters;
 
+  std::vector<complex_t> _points;
+
  public:
   newton_equation() = default;
 
   using complex_type = complex_t;
+  using real_type = real_t;
 
   explicit newton_equation(const point_list<complex_t>& points) {
     this->_parameters.reserve(points.size());
@@ -80,6 +83,8 @@ class newton_equation : public newton_equation_base {
       this->parameters()[i + 1] += temp;
     }
     this->parameters()[0] -= p;
+
+    this->_points.emplace_back(p);
   }
 
   [[nodiscard]] std::string to_string() const noexcept override {
@@ -164,93 +169,84 @@ class newton_equation : public newton_equation_base {
   void iterate_n(std::any& z, int n) const noexcept override {
     this->iterate_n(*std::any_cast<complex_t>(&z), n);
   }
-};
 
-}  // namespace newton_fractal
-#ifdef NEWTON_FRACTAL_MPC_SUPPORT
-#include <boost/multiprecision/mpc.hpp>
-namespace newton_fractal {
+  std::optional<single_result> compute_single(
+      complex_t& z, int iteration_times) const noexcept {
+    assert(this->_parameters.size() == this->_points.size());
+    this->iterate_n(z, iteration_times);
+    if (z.real() != z.real() || z.imag() != z.imag()) {
+      return std::nullopt;
+    }
 
-template <>
-class newton_equation<boostmp::mpc_complex> : public newton_equation_base {
- private:
-  std::vector<boostmp::mpc_complex> _parameters;
+    int min_idx = -1;
+    complex_t min_diff;
+    complex_t min_norm2{FP_INFINITE};
+    for (int idx = 0; idx < this->order(); idx++) {
+      complex_t diff = z - this->_points[idx];
+      complex_t diff_norm2;
+      compute_norm2(diff, diff_norm2);
 
-  struct buffer_t {
-    std::array<boostmp::mpc_complex, 4> complex_arr;
-    std::array<boostmp::mpfr_float, 2> real_arr;
-
-    buffer_t() = default;
-    explicit buffer_t(int prec) { this->set_precision(prec); }
-
-    void set_precision(int prec) & noexcept {
-      for (auto& val : this->real_arr) {
-        val.precision(prec);
-      }
-      for (auto& val : this->complex_arr) {
-        val.precision(prec);
+      if (diff_norm2.real() < min_norm2.real()) {
+        min_idx = idx;
+        min_diff = diff;
+        min_norm2 = diff_norm2;
       }
     }
-  };
 
-  // buffer_t buffer;
-
-  static buffer_t& buffer() noexcept;
-
- public:
-  newton_equation() = default;
-  newton_equation(const newton_equation&) = default;
-  newton_equation(newton_equation&&) = default;
-  explicit newton_equation(std::span<boostmp::mpc_complex> points);
-  newton_equation(std::span<boostmp::mpc_complex> points, int precision);
-
-  ~newton_equation() override = default;
-
-  using complex_type = boostmp::mpc_complex;
-
-  [[nodiscard]] std::optional<int> precision() const noexcept;
-
-  void set_precision(int p) & noexcept;
-
-  [[nodiscard]] int order() const noexcept override {
-    return (int)this->_parameters.size();
+    return single_result{
+        min_idx,
+        std::complex<double>{double(min_diff.real()), double(min_diff.imag())}};
   }
 
-  [[nodiscard]] auto& parameters() noexcept { return this->_parameters; }
-
-  [[nodiscard]] auto& parameters() const noexcept { return this->_parameters; }
-
-  [[nodiscard]] const auto& item_at_order(int _order) const noexcept {
-    assert(_order < this->order());
-    return this->parameters()[this->order() - _order - 1];
+  std::optional<single_result> compute_single(
+      std::any& z_any, int iteration_times) const noexcept override {
+    complex_t& z = *std::any_cast<complex_t>(&z_any);
+    return this->compute_single(z, iteration_times);
   }
 
-  void add_point(const boostmp::mpc_complex& point) & noexcept;
+  void compute(const fractal_utils::wind_base& _wind, int iteration_times,
+               compute_row_option& opt) const noexcept override {
+    assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
+    assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
+    const size_t rows = opt.bool_has_result.rows();
 
-  [[nodiscard]] std::string to_string() const noexcept override;
+    assert(opt.bool_has_result.cols() == opt.f64complex_difference.cols());
+    assert(opt.f64complex_difference.cols() == opt.u8_nearest_point_idx.cols());
+    const size_t cols = opt.bool_has_result.cols();
 
-  void compute_difference(const complex_type& z,
-                          complex_type& dst) const noexcept;
+    const auto& wind =
+        dynamic_cast<const fractal_utils::center_wind<real_t>&>(_wind);
 
-  [[nodiscard]] complex_type compute_difference(
-      const complex_type& z) const noexcept {
-    complex_type ret;
-    this->compute_difference(z, ret);
-    return ret;
-  }
+    const auto left_top_corner = wind.left_top_corner();
+    const complex_t r0c0{left_top_corner[0], left_top_corner[1]};
 
-  void iterate_inplace(complex_type& z) const noexcept;
-  [[nodiscard]] complex_type iterate(const complex_type& z) const noexcept;
+    const real_t r_unit = -wind.y_span / rows;
+    const real_t c_unit = wind.x_span / cols;
 
-  void iterate_n(complex_type& z, int n) const noexcept;
+#pragma omp parallel for schedule(guided) default(none) \
+    shared(rows, cols, r_unit, c_unit, r0c0, iteration_times, opt)
+    for (int r = 0; r < (int)rows; r++) {
+      complex_t z;
+      z.imag(r0c0.imag() + r * r_unit);
+      for (int c = 0; c < (int)cols; c++) {
+        z.real(r0c0.real() + c * c_unit);
 
-  void iterate_n(std::any& z, int n) const noexcept override {
-    this->iterate_n(*std::any_cast<complex_type>(&z), n);
+        auto result = this->compute_single(z, iteration_times);
+        opt.bool_has_result.at<bool>(r, c) = result.has_value();
+        if (result.has_value()) {
+          opt.u8_nearest_point_idx.at<uint8_t>(r, c) =
+              result.value().nearest_point_idx;
+          opt.f64complex_difference.at<std::complex<double>>(r, c) =
+              result.value().difference;
+        } else {
+          opt.u8_nearest_point_idx.at<uint8_t>(r, c) = 255;
+          opt.f64complex_difference.at<std::complex<double>>(r, c) = {NAN, NAN};
+        }
+      }
+    }
   }
 };
 
 }  // namespace newton_fractal
-
-#endif
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_EQUATION_HPP

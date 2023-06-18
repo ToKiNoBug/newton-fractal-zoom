@@ -1,5 +1,5 @@
 
-#include "newton_equation.hpp"
+#include "mpc_support.h"
 #include <sstream>
 
 namespace nf = newton_fractal;
@@ -60,6 +60,7 @@ void mpc_eq::add_point(const boostmp::mpc_complex& p) & noexcept {
     this->parameters()[i + 1] += temp;
   }
   this->parameters()[0] -= p;
+  this->_points.emplace_back(p);
 }
 
 void format_complex(const boostmp::mpc_complex& z,
@@ -174,5 +175,82 @@ mpc_eq::complex_type mpc_eq::iterate(const complex_type& z) const noexcept {
 void mpc_eq::iterate_n(complex_type& z, int n) const noexcept {
   for (int i = 0; i < n; i++) {
     this->iterate_inplace(z);
+  }
+}
+
+std::optional<nf::newton_equation_base::single_result> mpc_eq::compute_single(
+    complex_type& z, int iteration_times) const noexcept {
+  assert(this->_parameters.size() == this->_points.size());
+  this->iterate_n(z, iteration_times);
+
+  if (z.real() != z.real() || z.imag() != z.imag()) {
+    return std::nullopt;
+  }
+
+  int min_idx = -1;
+  complex_type min_diff;
+  complex_type min_norm2{FP_INFINITE};
+  for (int idx = 0; idx < this->order(); idx++) {
+    complex_type diff = z - this->_points[idx];
+    complex_type diff_norm2;
+    compute_norm2(diff, diff_norm2);
+
+    if (diff_norm2.real() < min_norm2.real()) {
+      min_idx = idx;
+      min_diff = diff;
+      min_norm2 = diff_norm2;
+    }
+  }
+
+  return single_result{min_idx, std::complex<double>{double(min_diff.real()),
+                                                     double(min_diff.imag())}};
+}
+
+std::optional<nf::newton_equation_base::single_result> mpc_eq::compute_single(
+    std::any& z_any, int iteration_times) const noexcept {
+  complex_type& z = *std::any_cast<complex_type>(&z_any);
+  return this->compute_single(z, iteration_times);
+}
+
+void mpc_eq::compute(const fractal_utils::wind_base& _wind, int iteration_times,
+                     compute_row_option& opt) const noexcept {
+  assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
+  assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
+  const size_t rows = opt.bool_has_result.rows();
+
+  assert(opt.bool_has_result.cols() == opt.f64complex_difference.cols());
+  assert(opt.f64complex_difference.cols() == opt.u8_nearest_point_idx.cols());
+  const size_t cols = opt.bool_has_result.cols();
+
+  const auto& wind =
+      dynamic_cast<const fractal_utils::center_wind<boostmp::mpfr_float>&>(
+          _wind);
+
+  const auto left_top_corner = wind.left_top_corner();
+  const complex_type r0c0{left_top_corner[0], left_top_corner[1]};
+
+  const boostmp::mpfr_float r_unit = -wind.y_span / rows;
+  const boostmp::mpfr_float c_unit = wind.x_span / cols;
+
+#pragma omp parallel for schedule(guided) default(none) \
+    shared(rows, cols, r_unit, c_unit, r0c0, iteration_times, opt)
+  for (int r = 0; r < (int)rows; r++) {
+    thread_local complex_type z;
+    z.imag(r0c0.imag() + r * r_unit);
+    for (int c = 0; c < (int)cols; c++) {
+      z.real(r0c0.real() + c * c_unit);
+
+      auto result = this->compute_single(z, iteration_times);
+      opt.bool_has_result.at<bool>(r, c) = result.has_value();
+      if (result.has_value()) {
+        opt.u8_nearest_point_idx.at<uint8_t>(r, c) =
+            result.value().nearest_point_idx;
+        opt.f64complex_difference.at<std::complex<double>>(r, c) =
+            result.value().difference;
+      } else {
+        opt.u8_nearest_point_idx.at<uint8_t>(r, c) = 255;
+        opt.f64complex_difference.at<std::complex<double>>(r, c) = {NAN, NAN};
+      }
+    }
   }
 }
