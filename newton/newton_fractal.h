@@ -5,7 +5,7 @@
 #ifndef NEWTON_FRACTAL_ZOOM_NEWTON_FRACTAL_H
 #define NEWTON_FRACTAL_ZOOM_NEWTON_FRACTAL_H
 
-#include "../core_utils/core_utils.h"
+#include <core_utils.h>
 #include "multiprecision_utils.h"
 #include <boost/multiprecision/cpp_bin_float.hpp>
 #include <complex>
