@@ -9,18 +9,20 @@
 namespace nf = newton_fractal;
 using std::cout, std::endl;
 
-template <typename float_t, typename complex_t = std::complex<float_t>>
+template <class eq_t, typename float_disp_t>
 void test_euqation() noexcept {
+  using real_t = eq_t::real_type;
+  using complex_t = eq_t::complex_type;
   nf::point_list<complex_t> points;
   points.emplace_back(1, 2);
   points.emplace_back(3, 4);
   points.emplace_back(5, 6);
-  // points.emplace_back(7, 8);
-  // points.emplace_back(9, 10);
-  // points.emplace_back(11, 12);
-  //  points.emplace_back(1, 2);
+  points.emplace_back(7, 8);
+  points.emplace_back(9, 10);
+  points.emplace_back(11, 12);
+  points.emplace_back(1, 2);
 
-  nf::newton_equation<complex_t> ne{points};
+  eq_t ne{points};
 
   fmt::print("equation : {}\n", ne.to_string());
 
@@ -30,32 +32,38 @@ void test_euqation() noexcept {
     complex_t norm2;
     newton_fractal::compute_norm2(diff, norm2);
 
-    fmt::print("Difference at ({}+{}i) = {}\n", float_t(p.real()),
-               float_t(p.imag()), float_t(norm2.real()));
+    fmt::print("Difference at ({}+{}i) = {}\n", float_disp_t(p.real()),
+               float_disp_t(p.imag()), float_disp_t(norm2.real()));
   }
 
   complex_t z = 10000;
   for (int i = 0; i < 30; i++) {
     complex_t z_1 = ne.iterate(z);
 
-    fmt::print("({}+{}i) iterates to ({}+{}i)\n", float_t(z.real()),
-               float_t(z.imag()), float_t(z_1.real()), float_t(z_1.imag()));
+    fmt::print("({}+{}i) iterates to ({}+{}i)\n", float_disp_t(z.real()),
+               float_disp_t(z.imag()), float_disp_t(z_1.real()),
+               float_disp_t(z_1.imag()));
     z = z_1;
   }
 }
 
 int main(int argc, char** argv) {
-  test_euqation<float>();
-  test_euqation<double>();
+  test_euqation<nf::equation_fixed_prec<1>, float>();
+  test_euqation<nf::equation_fixed_prec<2>, double>();
+  test_euqation<nf::equation_fixed_prec<4>, double>();
+  test_euqation<nf::equation_fixed_prec<8>, double>();
+  // test_euqation<nf::equation_fixed_prec<16>, double>();
 
   // return 0;
+  /*
+    test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<4>>,
+                  fu::float_by_precision_t<4>>();
+    */
 
-  test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<4>>>();
-
-  test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<8>>>();
+  // test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<8>>>();
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
-  test_euqation<double, boostmp::mpc_complex>();
+  // test_euqation<double, boostmp::mpc_complex>();
 #endif
 
   return 0;

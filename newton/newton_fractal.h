@@ -17,6 +17,7 @@
 #include <fmt/format.h>
 #include <iterator>
 #include <string>
+#include <memory>
 #include "newton_equation.hpp"
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -37,9 +38,9 @@ namespace fu = fractal_utils;
 namespace newton_fractal {
 using number_variant_t = std::variant<NEWTONFRACTAL_FLOAT_TYPE_LIST>;
 
-template <typename float_t, typename complex_t>
-void newton_iterate(std::span<const complex_t> points, complex_t& z,
-                    int32_t iter_times) noexcept {}
+tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+create_equation(fractal_utils::float_backend_lib backend,
+                int precision) noexcept;
 
 }  // namespace newton_fractal
 

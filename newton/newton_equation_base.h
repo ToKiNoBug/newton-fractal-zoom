@@ -13,6 +13,9 @@
 #include <complex>
 #include <optional>
 #include <core_utils.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+using njson = nlohmann::json;
 
 namespace newton_fractal {
 
@@ -43,6 +46,15 @@ class newton_equation_base {
   virtual void compute(const fractal_utils::wind_base &wind,
                        int iteration_times,
                        compute_row_option &opt) const noexcept = 0;
+
+  virtual void clear() & noexcept = 0;
+
+ public:
+  /* [[nodiscard]] virtual
+   tl::expected<std::unique_ptr<fractal_utils::wind_base>, std::string>
+   load_wind(const njson &) const noexcept = 0;
+
+   */
 };
 
 }  // namespace newton_fractal

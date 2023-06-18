@@ -27,4 +27,4 @@ if (MPC_FOUND OR LINUX)
 endif ()
 
 add_subdirectory(newton)
-
+add_subdirectory(nftool)

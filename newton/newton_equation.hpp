@@ -17,12 +17,101 @@
 #include <fmt/format.h>
 #include <iterator>
 #include <string>
-
+#include <nlohmann/json.hpp>
+#include <fmt/format.h>
 #include "newton_equation_base.h"
+#include <sstream>
 
 namespace fu = fractal_utils;
+/*
+#ifdef __GNUC__
+inline std::ostream& operator<<(__float128 number, std::ostream& os) noexcept {
+  os << double(number);
+}
+#endif
+
+*/
 
 namespace newton_fractal {
+
+namespace internal {
+
+template <typename real_t>
+std::optional<real_t> decode(const njson& nj) noexcept {
+  if (nj.is_number()) {
+    return real_t(double(nj));
+  }
+  if (!nj.is_string()) {
+    return std::nullopt;
+  }
+
+  std::string hex = nj;
+  std::vector<uint8_t> bin;
+  bin.resize(hex.size());
+  auto len = fractal_utils::hex_2_bin(hex, bin);
+  bin.resize(len.value());
+
+  return fractal_utils::decode_float<real_t>(bin);
+}
+
+template <typename real_t>
+tl::expected<fractal_utils::center_wind<real_t>, std::string> load_window(
+    const njson& nj) noexcept {
+  fractal_utils::center_wind<real_t> ret;
+  try {
+    for (size_t idx = 0; idx < 2; idx++) {
+      auto temp = decode<real_t>(nj.at("center").at(idx));
+      if (!temp.has_value()) {
+        return tl::make_unexpected(
+            fmt::format("Failed to decode center component at index {}", idx));
+      }
+      ret.center[idx] = std::move(temp.value());
+    }
+
+    {
+      auto temp = decode<real_t>(nj.at("x_span"));
+      if (!temp.has_value()) {
+        return tl::make_unexpected(
+            fmt::format("Failed to decode center x_span"));
+      }
+      ret.x_span = std::move(temp.value());
+    }
+    {
+      auto temp = decode<real_t>(nj.at("y_span"));
+      if (!temp.has_value()) {
+        return tl::make_unexpected(
+            fmt::format("Failed to decode center y_span"));
+      }
+      ret.y_span = std::move(temp.value());
+    }
+  } catch (std::exception& e) {
+    return tl::make_unexpected(
+        fmt::format("Failed to parse json. Detail: {}", e.what()));
+  }
+  return ret;
+}
+
+}  // namespace internal
+
+template <typename complex_t>
+void format_complex(const complex_t& z, std::ostream& os) noexcept {
+  os << z.real();
+  if (z.imag() >= 0) {
+    os << '+';
+  }
+  os << z.imag() << 'i';
+}
+
+#ifdef __GNUC__
+inline void format_complex(const std::complex<__float128>& z,
+                           std::ostream& os) noexcept {
+  os << double(z.real());
+  if (z.imag() >= 0) {
+    os << '+';
+  }
+  os << double(z.imag()) << 'i';
+}
+#endif
 
 template <typename complex_t>
 void compute_norm2(const complex_t& a, complex_t& b) noexcept {
@@ -33,10 +122,9 @@ using point_list = std::vector<complex_t>;
 
 template <typename complex_t, typename real_t = complex_t::value_type>
 class newton_equation : public newton_equation_base {
- private:
+ protected:
   // [a,b,c] <-> z^3 + az^2 + bz + c = 0
   std::vector<complex_t> _parameters;
-
   std::vector<complex_t> _points;
 
  public:
@@ -45,7 +133,7 @@ class newton_equation : public newton_equation_base {
   using complex_type = complex_t;
   using real_type = real_t;
 
-  explicit newton_equation(const point_list<complex_t>& points) {
+  explicit newton_equation(std::span<const complex_t>& points) {
     this->_parameters.reserve(points.size());
     for (const auto& p : points) {
       this->add_point(p);
@@ -55,6 +143,11 @@ class newton_equation : public newton_equation_base {
   auto& parameters() noexcept { return this->_parameters; }
 
   auto& parameters() const noexcept { return this->_parameters; }
+
+  void clear() & noexcept override {
+    this->_points.clear();
+    this->_parameters.clear();
+  }
 
   [[nodiscard]] inline int order() const noexcept override {
     return this->_parameters.size();
@@ -92,25 +185,40 @@ class newton_equation : public newton_equation_base {
       return "0 = 0";
     }
 
-    std::string ret = fmt::format("z^{}", this->order());
+    std::stringstream ss;
+
+    ss << fmt::format("z^{}", this->order());
 
     for (int i = 0; i < this->parameters().size(); i++) {
       const int current_order = this->order() - i - 1;
       if (current_order > 0) {
+        ss << " + (";
+        format_complex(this->parameters()[i], ss);
+        ss << ") * z^" << current_order;
+        //<< this->parameters()[i]
+
+        /*
         fmt::format_to(std::back_inserter(ret), " + ({}+{}i) * z^{}",
                        double(this->parameters()[i].real()),
                        double(this->parameters()[i].imag()), current_order);
+        */
       } else {
+        ss << " + (";
+        format_complex(this->parameters()[i], ss);
+        ss << ") = 0";
+        /*
         fmt::format_to(std::back_inserter(ret), " + ({}+{}i) = 0",
                        double(this->parameters()[i].real()),
                        double(this->parameters()[i].imag()));
+        */
       }
     }
 
-    return ret;
+    return ss.str();
   }
 
-  void compute_difference(const complex_t& z, complex_t& dst) const noexcept {
+  virtual void compute_difference(const complex_t& z,
+                                  complex_t& dst) const noexcept {
     // dst = 0;
     dst = this->item_at_order(0);
     complex_t z_power = z;
@@ -122,7 +230,7 @@ class newton_equation : public newton_equation_base {
     dst += z_power;
   }
 
-  [[nodiscard]] complex_t compute_difference(
+  [[nodiscard]] virtual complex_t compute_difference(
       const complex_t& z) const noexcept {
     complex_t ret;
     this->compute_difference(z, ret);
@@ -227,9 +335,17 @@ class newton_equation : public newton_equation_base {
     shared(rows, cols, r_unit, c_unit, r0c0, iteration_times, opt)
     for (int r = 0; r < (int)rows; r++) {
       complex_t z;
-      z.imag(r0c0.imag() + r * r_unit);
+      {
+        real_t temp = r * r_unit;
+        temp = r0c0.imag();
+        z.imag(temp);
+      }
       for (int c = 0; c < (int)cols; c++) {
-        z.real(r0c0.real() + c * c_unit);
+        {
+          real_t temp = c * c_unit;
+          temp += r0c0.real();
+          z.real(temp);
+        }
 
         auto result = this->compute_single(z, iteration_times);
         opt.bool_has_result.at<bool>(r, c) = result.has_value();
@@ -245,6 +361,42 @@ class newton_equation : public newton_equation_base {
       }
     }
   }
+
+ public:
+  [[nodiscard]] tl::expected<std::unique_ptr<fractal_utils::wind_base>,
+                             std::string>
+  load_wind(const njson& nj) const noexcept  // override
+  {
+    auto ret = internal::load_window<real_type>(nj);
+    if (ret.has_value()) {
+      return std::unique_ptr<fractal_utils::wind_base>{
+          new fractal_utils::center_wind<real_type>{std::move(ret.value())}};
+    }
+    return tl::make_unexpected(std::move(ret.error()));
+  }
+};
+
+template <int prec>
+class equation_fixed_prec
+    : public newton_equation<
+          fu::complex_type_of<fu::float_by_precision_t<prec>>,
+          fu::float_by_precision_t<prec>> {
+ public:
+  [[nodiscard]] int precision() const noexcept { return prec; }
+  using base_t =
+      newton_equation<fu::complex_type_of<fu::float_by_precision_t<prec>>,
+                      fu::float_by_precision_t<prec>>;
+
+  using real_type = fu::float_by_precision_t<prec>;
+  using complex_type = fu::complex_type_of<fu::float_by_precision_t<prec>>;
+
+  equation_fixed_prec() = default;
+  equation_fixed_prec(const equation_fixed_prec&) = default;
+  equation_fixed_prec(equation_fixed_prec&&) noexcept = default;
+  explicit equation_fixed_prec(std::span<const complex_type> points)
+      : base_t{points} {}
+
+  ~equation_fixed_prec() = default;
 };
 
 }  // namespace newton_fractal

@@ -3,46 +3,45 @@
 #include <sstream>
 
 namespace nf = newton_fractal;
+using nf::newton_equation_mpc;
 
-using mpc_eq = nf::newton_equation<boostmp::mpc_complex>;
+newton_equation_mpc::newton_equation_mpc(int precision) {
+  this->_precision = precision;
+}
 
-nf::newton_equation<boostmp::mpc_complex>::newton_equation(
-    std::span<boostmp::mpc_complex> points) {
+newton_equation_mpc::newton_equation_mpc(
+    std::span<const boostmp::mpc_complex> points) {
   this->_parameters.reserve(points.size());
   for (const auto& p : points) {
     this->add_point(p);
   }
+  this->update_precision();
 }
 
-nf::newton_equation<boostmp::mpc_complex>::newton_equation(
-    std::span<boostmp::mpc_complex> points, int precision)
-    : newton_equation{points} {
+newton_equation_mpc::newton_equation_mpc(
+    std::span<const boostmp::mpc_complex> points, int precision)
+    : newton_equation_mpc{points} {
   this->set_precision(precision);
 }
 
-std::optional<int> mpc_eq::precision() const noexcept {
-  if (this->_parameters.empty()) {
-    return std::nullopt;
-  }
+int newton_equation_mpc::precision() const noexcept { return this->_precision; }
 
-  int ret = this->_parameters.front().precision();
-  for (const auto& val : this->_parameters) {
-    if (ret != val.precision()) {
-      return std::nullopt;
-    }
-  }
-
-  return ret;
-}
-
-void mpc_eq::set_precision(int p) & noexcept {
-  for (auto& val : this->_parameters) {
-    val.precision(p);
-  }
+void newton_equation_mpc::set_precision(int p) & noexcept {
+  assert(p > 0);
+  this->_precision = p;
   // this->buffer.set_precision(p);
 }
 
-void mpc_eq::add_point(const boostmp::mpc_complex& p) & noexcept {
+void newton_equation_mpc::update_precision() & noexcept {
+  for (auto& val : this->_parameters) {
+    val.precision(this->_precision);
+  }
+  for (auto& val : this->_points) {
+    val.precision(this->_precision);
+  }
+}
+
+void newton_equation_mpc::add_point(const boostmp::mpc_complex& p) & noexcept {
   const int order_before = this->order();
 
   if (order_before > 0) {
@@ -61,6 +60,8 @@ void mpc_eq::add_point(const boostmp::mpc_complex& p) & noexcept {
   }
   this->parameters()[0] -= p;
   this->_points.emplace_back(p);
+
+  this->update_precision();
 }
 
 void format_complex(const boostmp::mpc_complex& z,
@@ -72,46 +73,13 @@ void format_complex(const boostmp::mpc_complex& z,
   ss << z.imag() << 'i';
 }
 
-// std::ostream & operator<<(const )
-
-std::string mpc_eq::to_string() const noexcept {
-  if (this->order() == 0) {
-    return "0 = 0";
-  }
-
-  std::stringstream ss;
-
-  ss << fmt::format("z^{}", this->order());
-
-  for (int i = 0; i < this->parameters().size(); i++) {
-    const int current_order = this->order() - i - 1;
-    if (current_order > 0) {
-      ss << " + (" << this->parameters()[i] << ") * z^" << current_order;
-      /*
-      fmt::format_to(std::back_inserter(ret), " + ({}+{}i) * z^{}",
-                     double(this->parameters()[i].real()),
-                     double(this->parameters()[i].imag()), current_order);
-      */
-    } else {
-      ss << " + (" << this->parameters()[i] << ") = 0";
-      /*
-      fmt::format_to(std::back_inserter(ret), " + ({}+{}i) = 0",
-                     double(this->parameters()[i].real()),
-                     double(this->parameters()[i].imag()));
-      */
-    }
-  }
-
-  return ss.str();
-}
-
-mpc_eq::buffer_t& mpc_eq::buffer() noexcept {
+newton_equation_mpc::buffer_t& newton_equation_mpc::buffer() noexcept {
   thread_local buffer_t buf;
   return buf;
 }
 
-void mpc_eq::compute_difference(const complex_type& z,
-                                complex_type& dst) const noexcept {
+void newton_equation_mpc::compute_difference(const complex_type& z,
+                                             complex_type& dst) const noexcept {
   // dst = 0;
   dst = this->item_at_order(0);
   auto& z_power = buffer().complex_arr[0];
@@ -127,7 +95,7 @@ void mpc_eq::compute_difference(const complex_type& z,
   dst += z_power;
 }
 
-void mpc_eq::iterate_inplace(complex_type& z) const noexcept {
+void newton_equation_mpc::iterate_inplace(complex_type& z) const noexcept {
   assert(this->order() > 1);
   auto& buf = this->buffer();
 
@@ -166,20 +134,22 @@ void mpc_eq::iterate_inplace(complex_type& z) const noexcept {
   z += f;
 }
 
-mpc_eq::complex_type mpc_eq::iterate(const complex_type& z) const noexcept {
+newton_equation_mpc::complex_type newton_equation_mpc::iterate(
+    const complex_type& z) const noexcept {
   complex_type temp{z};
   this->iterate_inplace(temp);
   return temp;
 }
 
-void mpc_eq::iterate_n(complex_type& z, int n) const noexcept {
+void newton_equation_mpc::iterate_n(complex_type& z, int n) const noexcept {
   for (int i = 0; i < n; i++) {
     this->iterate_inplace(z);
   }
 }
 
-std::optional<nf::newton_equation_base::single_result> mpc_eq::compute_single(
-    complex_type& z, int iteration_times) const noexcept {
+auto newton_equation_mpc::compute_single(complex_type& z,
+                                         int iteration_times) const noexcept
+    -> std::optional<single_result> {
   assert(this->_parameters.size() == this->_points.size());
   this->iterate_n(z, iteration_times);
 
@@ -206,14 +176,16 @@ std::optional<nf::newton_equation_base::single_result> mpc_eq::compute_single(
                                                      double(min_diff.imag())}};
 }
 
-std::optional<nf::newton_equation_base::single_result> mpc_eq::compute_single(
-    std::any& z_any, int iteration_times) const noexcept {
+auto newton_equation_mpc::compute_single(std::any& z_any,
+                                         int iteration_times) const noexcept
+    -> std::optional<single_result> {
   complex_type& z = *std::any_cast<complex_type>(&z_any);
   return this->compute_single(z, iteration_times);
 }
 
-void mpc_eq::compute(const fractal_utils::wind_base& _wind, int iteration_times,
-                     compute_row_option& opt) const noexcept {
+void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
+                                  int iteration_times,
+                                  compute_row_option& opt) const noexcept {
   assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
   assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
   const size_t rows = opt.bool_has_result.rows();

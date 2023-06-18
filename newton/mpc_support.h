@@ -14,12 +14,10 @@
 #include <boost/multiprecision/mpc.hpp>
 namespace newton_fractal {
 
-template <>
-class newton_equation<boostmp::mpc_complex> : public newton_equation_base {
- private:
-  std::vector<boostmp::mpc_complex> _parameters;
-
-  std::vector<boostmp::mpc_complex> _points;
+class newton_equation_mpc
+    : public newton_equation<boostmp::mpc_complex, boostmp::mpfr_float> {
+ protected:
+  int _precision{50};
 
   struct buffer_t {
     std::array<boostmp::mpc_complex, 4> complex_arr;
@@ -37,53 +35,37 @@ class newton_equation<boostmp::mpc_complex> : public newton_equation_base {
       }
     }
   };
-
-  // buffer_t buffer;
-
   static buffer_t& buffer() noexcept;
 
+  void update_precision() & noexcept;
+
  public:
-  newton_equation() = default;
-  newton_equation(const newton_equation&) = default;
-  newton_equation(newton_equation&&) = default;
-  explicit newton_equation(std::span<boostmp::mpc_complex> points);
-  newton_equation(std::span<boostmp::mpc_complex> points, int precision);
+  newton_equation_mpc() = default;
+  explicit newton_equation_mpc(int precision);
+  explicit newton_equation_mpc(std::span<const boostmp::mpc_complex> points);
+  newton_equation_mpc(std::span<const boostmp::mpc_complex> points,
+                      int precision);
 
-  ~newton_equation() override = default;
-
-  using complex_type = boostmp::mpc_complex;
-
-  [[nodiscard]] std::optional<int> precision() const noexcept;
+  [[nodiscard]] int precision() const noexcept;
 
   void set_precision(int p) & noexcept;
 
-  [[nodiscard]] int order() const noexcept override {
-    return (int)this->_parameters.size();
-  }
-
-  [[nodiscard]] auto& parameters() noexcept { return this->_parameters; }
-
-  [[nodiscard]] auto& parameters() const noexcept { return this->_parameters; }
-
-  [[nodiscard]] const auto& item_at_order(int _order) const noexcept {
-    assert(_order < this->order());
-    return this->parameters()[this->order() - _order - 1];
+  void clear() & noexcept override {
+    this->_points.clear();
+    this->_parameters.clear();
   }
 
   void add_point(const boostmp::mpc_complex& point) & noexcept;
 
-  [[nodiscard]] std::string to_string() const noexcept override;
-
   void compute_difference(const complex_type& z,
-                          complex_type& dst) const noexcept;
+                          complex_type& dst) const noexcept override;
 
   [[nodiscard]] complex_type compute_difference(
-      const complex_type& z) const noexcept {
+      const complex_type& z) const noexcept override {
     complex_type ret;
     this->compute_difference(z, ret);
     return ret;
   }
-
   void iterate_inplace(complex_type& z) const noexcept;
   [[nodiscard]] complex_type iterate(const complex_type& z) const noexcept;
 
