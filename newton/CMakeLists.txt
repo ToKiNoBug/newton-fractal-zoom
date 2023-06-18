@@ -8,7 +8,7 @@ add_library(newton_fractal STATIC
         newton_equation_base.h
         newton_equation.hpp
 
-        mpc_support.h newton_archive.cpp newton_archive.h)
+        mpc_support.h newton_archive.cpp newton_archive.h object_creator.cpp object_creator.h)
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 

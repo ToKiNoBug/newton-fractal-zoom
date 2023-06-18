@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include "newton_equation.hpp"
+#include "object_creator.h"
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
 #include <boost/multiprecision/mpfr.hpp>
