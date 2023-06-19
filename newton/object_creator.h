@@ -6,7 +6,7 @@
 #define NEWTON_FRACTAL_ZOOM_OBJECT_CREATOR_H
 
 #include <multiprecision_utils.h>
-#include "newton_equation.hpp"
+#include "newton_equation_base.h"
 #include <tl/expected.hpp>
 
 namespace newton_fractal {
@@ -29,11 +29,15 @@ class object_creator {
                                      std::string>
   create_window(const njson&) const noexcept = 0;
 
-  [[nodiscard]] virtual tl::expected<std::unique_ptr<fractal_utils::wind_base>,
+  [[nodiscard]] virtual tl::expected<std::unique_ptr<newton_equation_base>,
                                      std::string>
   create_equation(const njson&) const noexcept = 0;
+
+  [[nodiscard]] virtual bool is_fixed_precision() const noexcept = 0;
 };
 
 }  // namespace newton_fractal
+
+namespace nf = newton_fractal;
 
 #endif  // NEWTON_FRACTAL_ZOOM_OBJECT_CREATOR_H

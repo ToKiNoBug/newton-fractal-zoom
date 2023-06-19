@@ -3,8 +3,15 @@
 //
 
 #include "newton_fractal.h"
+
+#include "newton_equation.hpp"
 #include <iostream>
 #include <complex>
+
+#include "newton_equation.hpp"
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+#include "mpc_support.h"
+#endif
 
 namespace nf = newton_fractal;
 using std::cout, std::endl;
@@ -52,15 +59,9 @@ int main(int argc, char** argv) {
   test_euqation<nf::equation_fixed_prec<2>, double>();
   test_euqation<nf::equation_fixed_prec<4>, double>();
   test_euqation<nf::equation_fixed_prec<8>, double>();
-  // test_euqation<nf::equation_fixed_prec<16>, double>();
+  test_euqation<nf::equation_fixed_prec<16>, double>();
 
-  // return 0;
-  /*
-    test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<4>>,
-                  fu::float_by_precision_t<4>>();
-    */
-
-  // test_euqation<double, fu::complex_type_of<fu::float_by_precision_t<8>>>();
+  test_euqation<nf::newton_equation_mpc, double>();
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
   // test_euqation<double, boostmp::mpc_complex>();

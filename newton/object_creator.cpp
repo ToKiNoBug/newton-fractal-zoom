@@ -4,6 +4,11 @@
 
 #include "object_creator.h"
 #include <magic_enum.hpp>
+#include "newton_equation.hpp"
+
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+#include "mpc_support.h"
+#endif
 
 namespace newton_fractal {
 
@@ -64,8 +69,249 @@ tl::expected<void, std::string> is_valid_option(
   }
 }
 
+template <typename complex_t, typename real_t>
+tl::expected<complex_t, std::string> decode_complex(
+    const njson& cur_p) noexcept {
+  if (cur_p.size() != 2) {
+    return tl::make_unexpected(
+        fmt::format("Expected an array of "
+                    "2 elements."));
+  }
+  auto temp_real = internal::decode<real_t>(cur_p[0]);
+  auto temp_imag = internal::decode<real_t>(cur_p[0]);
+
+  if (!temp_real.has_value()) {
+    tl::make_unexpected(fmt::format("Failed to decode real part."));
+  }
+  if (!temp_imag.has_value()) {
+    tl::make_unexpected(fmt::format("Failed to decode imaginary part."));
+  }
+  complex_t ret;
+  ret.real(std::move(temp_real.value()));
+  ret.imag(std::move(temp_imag.value()));
+
+  return ret;
+}
+
+template <typename complex_t, typename real_t>
+class object_creator_default_impl : public object_creator {
+ public:
+  using real_type = real_t;
+  using complex_type = complex_t;
+
+  [[nodiscard]] fractal_utils::float_backend_lib backend_lib()
+      const noexcept override {
+    return fu::backend_of<real_t>();
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<fractal_utils::wind_base>,
+                             std::string>
+  create_window(const njson& nj) const noexcept override {
+    fractal_utils::center_wind<real_type> ret;
+    try {
+      for (size_t idx = 0; idx < 2; idx++) {
+        auto temp = internal::decode<real_t>(nj.at("center").at(idx));
+        if (!temp.has_value()) {
+          return tl::make_unexpected(fmt::format(
+              "Failed to decode center component at index {}", idx));
+        }
+        ret.center[idx] = std::move(temp.value());
+      }
+
+      {
+        auto temp = internal::decode<real_t>(nj.at("x_span"));
+        if (!temp.has_value()) {
+          return tl::make_unexpected(
+              fmt::format("Failed to decode center x_span"));
+        }
+        ret.x_span = std::move(temp.value());
+      }
+      {
+        auto temp = internal::decode<real_t>(nj.at("y_span"));
+        if (!temp.has_value()) {
+          return tl::make_unexpected(
+              fmt::format("Failed to decode center y_span"));
+        }
+        ret.y_span = std::move(temp.value());
+      }
+    } catch (std::exception& e) {
+      return tl::make_unexpected(
+          fmt::format("Failed to parse json. Detail: {}", e.what()));
+    }
+
+    auto* temp = new fractal_utils::center_wind<real_type>{std::move(ret)};
+    std::unique_ptr<fractal_utils::wind_base> r{temp};
+    return r;
+  }
+
+ protected:
+  [[nodiscard]] tl::expected<std::vector<complex_type>, std::string>
+  decode_points(const njson& nj) const noexcept {
+    std::vector<complex_type> points;
+
+    try {
+      const size_t num_points = nj.at("points");
+      if (num_points <= 1) {
+        return tl::make_unexpected(fmt::format(
+            "Too few points! Requires more or euqal than 2 points."));
+      }
+      if (num_points > 255) {
+        return tl::make_unexpected(
+            fmt::format("Too many points! Expected no more than 255"));
+      }
+      points.resize(num_points);
+      const auto& plist = nj.at("points");
+      for (size_t i = 0; i < num_points; i++) {
+        const auto& cur_p = plist.at(i);
+        auto cplx_opt = decode_complex<complex_type, real_type>(cur_p);
+        if (!cplx_opt.has_value()) {
+          return tl::make_unexpected(
+              fmt::format("Failed to decode the {}-th point. Detail: {}", i,
+                          cplx_opt.error()));
+        }
+        points[i] = std::move(cplx_opt.value());
+      }
+    } catch (std::exception& e) {
+      return tl::make_unexpected(fmt::format(
+          "Exception occurred during parsing json. Detail: {}", e.what()));
+    }
+
+    return points;
+  }
+};
+
+template <int prec>
+class object_creator_by_prec
+    : public object_creator_default_impl<
+          fu::complex_type_of<fu::float_by_precision_t<prec>>,
+          fu::float_by_precision_t<prec>> {
+ public:
+  using complex_type = fu::complex_type_of<fu::float_by_precision_t<prec>>;
+
+  [[nodiscard]] int precision() const noexcept override { return prec; }
+
+  [[nodiscard]] bool is_fixed_precision() const noexcept override {
+    return true;
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+  create_equation(const njson& nj) const noexcept override {
+    auto points = this->decode_points(nj);
+    if (!points.has_value()) {
+      return tl::make_unexpected(
+          fmt::format("Failed to decode points. Detail: {}", points.error()));
+    }
+
+    newton_equation_base* eqp = new equation_fixed_prec<prec>{points.value()};
+    return std::unique_ptr<newton_equation_base>{eqp};
+  }
+};
+
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+
+class object_creator_mpc
+    : public object_creator_default_impl<boostmp::mpc_complex,
+                                         boostmp::mpfr_float> {
+ private:
+  const int _precision{0};
+
+ public:
+  explicit object_creator_mpc(int precision) : _precision{precision} {}
+
+  using base_t =
+      object_creator_default_impl<boostmp::mpc_complex, boostmp::mpfr_float>;
+
+  [[nodiscard]] int precision() const noexcept override {
+    return this->_precision;
+  }
+
+  [[nodiscard]] bool is_fixed_precision() const noexcept override {
+    return false;
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<fractal_utils::wind_base>,
+                             std::string>
+  create_window(const njson& nj) const noexcept override {
+    auto ret = base_t::create_window(nj);
+    if (ret.has_value()) {
+      auto windp =
+          dynamic_cast<fractal_utils::center_wind<typename base_t::real_type>*>(
+              ret.value().get());
+      windp->x_span.precision(this->precision());
+      windp->y_span.precision(this->precision());
+      for (auto& val : windp->center) {
+        val.precision(this->precision());
+      }
+    }
+
+    return ret;
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+  create_equation(const njson& nj) const noexcept override {
+    auto points = this->decode_points(nj);
+    if (!points.has_value()) {
+      return tl::make_unexpected(
+          fmt::format("Failed to decode points. Detail: {}", points.error()));
+    }
+
+    newton_equation_base* eqp =
+        new newton_equation_mpc{points.value(), this->precision()};
+    return std::unique_ptr<newton_equation_base>{eqp};
+  }
+};
+
+#endif
+
 tl::expected<std::unique_ptr<object_creator>, std::string>
 object_creator::create(fractal_utils::float_backend_lib backend,
-                       int precision) noexcept {}
+                       int precision) noexcept {
+  if (!is_valid_option(backend, precision)) {
+    return tl::make_unexpected(
+        fmt::format("Unsupported option: backend = {}, precision = {}.",
+                    magic_enum::enum_name(backend), precision));
+  }
+
+  switch (backend) {
+    case fu::float_backend_lib::standard:
+    case fu::float_backend_lib::quadmath:
+    case fu::float_backend_lib::boost: {
+      object_creator* ret = nullptr;
+      switch (precision) {
+        case 1:
+          ret = new object_creator_by_prec<1>;
+          break;
+        case 2:
+          ret = new object_creator_by_prec<2>;
+          break;
+        case 4:
+          ret = new object_creator_by_prec<4>;
+          break;
+        case 8:
+          ret = new object_creator_by_prec<8>;
+          break;
+        case 16:
+          ret = new object_creator_by_prec<16>;
+          break;
+        default:
+          return tl::make_unexpected(
+              fmt::format("Unsupported option: backend = {}, precision = {}.",
+                          magic_enum::enum_name(backend), precision));
+      }
+
+      return std::unique_ptr<object_creator>{ret};
+    }
+
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+    case fu::float_backend_lib::mpfr:
+      return std::unique_ptr<object_creator>{new object_creator_mpc{precision}};
+#endif
+
+    default:
+      return tl::make_unexpected(
+          fmt::format("Unsupported option: backend = {}, precision = {}.",
+                      magic_enum::enum_name(backend), precision));
+  }
+}
 
 }  // namespace newton_fractal
