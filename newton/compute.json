@@ -1,6 +1,6 @@
 {
   "backend": "mpfr",
-  "precision": 4,
+  "precision": 100,
   "window": {
     "center": [
       "0x",
@@ -12,5 +12,6 @@
   "points": [
   ],
   "rows": 1080,
-  "cols": 1920
+  "cols": 1920,
+  "iteration": 100
 }

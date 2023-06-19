@@ -11,6 +11,7 @@
 namespace newton_fractal {
 
 class newton_archive {
+ private:
  public:
 };
 
