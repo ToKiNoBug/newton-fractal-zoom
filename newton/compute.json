@@ -3,13 +3,25 @@
   "precision": 100,
   "window": {
     "center": [
-      "0x",
-      "0x"
+      0,
+      0
     ],
-    "x_span": 1,
-    "y_span": 1
+    "x_span": 7.1111,
+    "y_span": 4
   },
   "points": [
+    [
+      1,
+      -1
+    ],
+    [
+      -4,
+      4
+    ],
+    [
+      6,
+      6
+    ]
   ],
   "rows": 1080,
   "cols": 1920,

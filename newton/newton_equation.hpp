@@ -61,16 +61,14 @@ std::optional<real_t> decode(const njson& nj) noexcept {
     return real_t(double(nj));
   }
   if (!nj.is_string()) {
-    return std::nullopt;
+    std::string hex = nj;
+    std::vector<uint8_t> bin;
+    bin.resize(hex.size());
+    auto len = fractal_utils::hex_2_bin(hex, bin);
+    bin.resize(len.value());
+    return fractal_utils::decode_float<real_t>(bin);
   }
-
-  std::string hex = nj;
-  std::vector<uint8_t> bin;
-  bin.resize(hex.size());
-  auto len = fractal_utils::hex_2_bin(hex, bin);
-  bin.resize(len.value());
-
-  return fractal_utils::decode_float<real_t>(bin);
+  return std::nullopt;
 }
 
 }  // namespace internal

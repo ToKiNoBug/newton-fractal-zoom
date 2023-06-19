@@ -183,7 +183,7 @@ class object_creator_default_impl : public object_creator {
     std::vector<complex_type> points;
 
     try {
-      const size_t num_points = nj.at("points");
+      const size_t num_points = nj.size();
       if (num_points <= 1) {
         return tl::make_unexpected(fmt::format(
             "Too few points! Requires more or euqal than 2 points."));
@@ -193,9 +193,9 @@ class object_creator_default_impl : public object_creator {
             fmt::format("Too many points! Expected no more than 255"));
       }
       points.resize(num_points);
-      const auto& plist = nj.at("points");
+
       for (size_t i = 0; i < num_points; i++) {
-        const auto& cur_p = plist.at(i);
+        const auto& cur_p = nj[i];
         auto cplx_opt = decode_complex<complex_type, real_type>(cur_p);
         if (!cplx_opt.has_value()) {
           return tl::make_unexpected(
@@ -206,7 +206,7 @@ class object_creator_default_impl : public object_creator {
       }
     } catch (std::exception& e) {
       return tl::make_unexpected(fmt::format(
-          "Exception occurred during parsing json. Detail: {}", e.what()));
+          "Exception occurred when parsing json. Detail: {}", e.what()));
     }
 
     return points;
