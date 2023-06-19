@@ -8,7 +8,9 @@ add_library(newton_fractal STATIC
         newton_equation_base.h
         newton_equation.hpp
 
-        mpc_support.h newton_archive.cpp newton_archive.h object_creator.cpp object_creator.h)
+        mpc_support.h
+        object_creator.cpp
+        object_creator.h)
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
@@ -47,3 +49,7 @@ if (${NF_mpc_support})
     target_compile_definitions(newton_fractal PUBLIC NEWTON_FRACTAL_MPC_SUPPORT=1)
     target_link_libraries(newton_fractal PUBLIC mpfr mpc)
 endif ()
+
+install(TARGETS newton_fractal
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
