@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
         ->required();
     compute->add_option("-o", ct.archive_filename)->required();
     compute->add_option("--rows", ct.row_override);
+    compute->add_option("-j,--threads", ct.threads);
   }
 
   CLI11_PARSE(capp, argc, argv);

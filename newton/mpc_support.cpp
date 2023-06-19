@@ -43,6 +43,7 @@ void newton_equation_mpc::update_precision() & noexcept {
 
 void newton_equation_mpc::add_point(const boostmp::mpc_complex& p) & noexcept {
   const int order_before = this->order();
+  this->_points.emplace_back(p);
 
   if (order_before > 0) {
     // temp = this->parameters().back() * (-p);
@@ -59,7 +60,6 @@ void newton_equation_mpc::add_point(const boostmp::mpc_complex& p) & noexcept {
     this->parameters()[i + 1] += temp;
   }
   this->parameters()[0] -= p;
-  this->_points.emplace_back(p);
 
   this->update_precision();
 }
@@ -187,7 +187,7 @@ auto newton_equation_mpc::compute_single(std::any& z_any,
 */
 void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                                   int iteration_times,
-                                  compute_row_option& opt) const noexcept {
+                                  compute_option& opt) const noexcept {
   assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
   assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
   const size_t rows = opt.bool_has_result.rows();

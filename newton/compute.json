@@ -1,6 +1,6 @@
 {
   "backend": "mpfr",
-  "precision": 100,
+  "precision": 71,
   "window": {
     "center": [
       0,

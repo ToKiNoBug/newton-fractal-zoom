@@ -139,6 +139,7 @@ class newton_equation : public newton_equation_base {
   }
 
   void add_point(const complex_t& p) noexcept {
+    this->_points.emplace_back(p);
     const int order_before = this->order();
 
     if (order_before > 0) {
@@ -156,8 +157,6 @@ class newton_equation : public newton_equation_base {
       this->parameters()[i + 1] += temp;
     }
     this->parameters()[0] -= p;
-
-    this->_points.emplace_back(p);
   }
 
   [[nodiscard]] std::string to_string() const noexcept override {
@@ -294,7 +293,7 @@ class newton_equation : public newton_equation_base {
   */
 
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
-               compute_row_option& opt) const noexcept override {
+               compute_option& opt) const noexcept override {
     assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
     assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
     const size_t rows = opt.bool_has_result.rows();

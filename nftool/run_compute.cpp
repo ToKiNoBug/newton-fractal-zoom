@@ -3,6 +3,7 @@
 #include <newton_fractal.h>
 #include <fstream>
 #include <fmt/format.h>
+#include <omp.h>
 
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
   nf::meta_data metadata;
@@ -15,6 +16,26 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
     }
     metadata = std::move(md_e.value());
   }
+
+  fu::unique_map cplx{static_cast<size_t>(metadata.rows),
+                      static_cast<size_t>(metadata.cols),
+                      sizeof(std::complex<double>)};
+
+  fu::unique_map idx{static_cast<size_t>(metadata.rows),
+                     static_cast<size_t>(metadata.cols), sizeof(uint8_t)};
+
+  fu::unique_map has_result{static_cast<size_t>(metadata.rows),
+                            static_cast<size_t>(metadata.cols), sizeof(bool)};
+
+  nf::newton_equation_base::compute_option option{has_result, idx, cplx};
+
+  omp_set_num_threads(ct.threads);
+
+  double wtime = omp_get_wtime();
+  metadata.equation->compute(*metadata.window, metadata.iteration, option);
+  wtime = omp_get_wtime() - wtime;
+
+  fmt::print("Computation finished with {} seconds.\n", wtime);
 
   return {};
 }

@@ -42,7 +42,7 @@ class newton_equation_base {
       std::any &z, int iteration_times) const noexcept = 0;
   */
 
-  struct compute_row_option {
+  struct compute_option {
     fractal_utils::map_view bool_has_result;
     fractal_utils::map_view u8_nearest_point_idx;
     fractal_utils::map_view f64complex_difference;
@@ -50,7 +50,7 @@ class newton_equation_base {
 
   virtual void compute(const fractal_utils::wind_base &wind,
                        int iteration_times,
-                       compute_row_option &opt) const noexcept = 0;
+                       compute_option &opt) const noexcept = 0;
 
   virtual void clear() & noexcept = 0;
 
