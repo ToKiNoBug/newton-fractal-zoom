@@ -5,9 +5,14 @@
 #ifndef NEWTON_FRACTAL_ZOOM_NEWTON_ARCHIVE_H
 #define NEWTON_FRACTAL_ZOOM_NEWTON_ARCHIVE_H
 
+#include "object_creator.h"
+#include <core_utils.h>
+
 namespace newton_fractal {
 
-class newton_archive {};
+class newton_archive {
+ public:
+};
 
 }  // namespace newton_fractal
 

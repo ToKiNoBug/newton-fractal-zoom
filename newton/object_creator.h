@@ -25,6 +25,8 @@ class object_creator {
       const noexcept = 0;
   [[nodiscard]] virtual int precision() const noexcept = 0;
 
+  [[nodiscard]] virtual bool is_fixed_precision() const noexcept = 0;
+
   [[nodiscard]] virtual tl::expected<std::unique_ptr<fractal_utils::wind_base>,
                                      std::string>
   create_window(const njson&) const noexcept = 0;
@@ -33,7 +35,11 @@ class object_creator {
                                      std::string>
   create_equation(const njson&) const noexcept = 0;
 
-  [[nodiscard]] virtual bool is_fixed_precision() const noexcept = 0;
+  [[nodiscard]] virtual tl::expected<njson, std::string> save_window(
+      const fractal_utils::wind_base& wb) const noexcept = 0;
+
+  [[nodiscard]] virtual njson::array_t save_equation(
+      const newton_equation_base&) const noexcept;
 };
 
 }  // namespace newton_fractal

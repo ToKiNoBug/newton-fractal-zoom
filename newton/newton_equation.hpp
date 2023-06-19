@@ -37,6 +37,25 @@ namespace newton_fractal {
 namespace internal {
 
 template <typename real_t>
+void encode_float_to_hex(const real_t& r, std::vector<uint8_t>& bin,
+                         std::string& hex) noexcept {
+  bin.resize(sizeof(real_t));
+  while (true) {
+    const auto bytes = fu::encode_float(r, bin);
+    if (bytes != 0) {
+      bin.resize(bytes);
+      break;
+    }
+    bin.resize(bin.size() * 2);
+  }
+
+  hex.resize(bin.size() * 2 + 16);
+  auto len = fu::bin_2_hex(bin, hex, true);
+  assert(len.has_value());
+  hex.resize(len.value());
+}
+
+template <typename real_t>
 std::optional<real_t> decode(const njson& nj) noexcept {
   if (nj.is_number()) {
     return real_t(double(nj));
@@ -52,43 +71,6 @@ std::optional<real_t> decode(const njson& nj) noexcept {
   bin.resize(len.value());
 
   return fractal_utils::decode_float<real_t>(bin);
-}
-
-template <typename real_t>
-tl::expected<fractal_utils::center_wind<real_t>, std::string> load_window(
-    const njson& nj) noexcept {
-  fractal_utils::center_wind<real_t> ret;
-  try {
-    for (size_t idx = 0; idx < 2; idx++) {
-      auto temp = decode<real_t>(nj.at("center").at(idx));
-      if (!temp.has_value()) {
-        return tl::make_unexpected(
-            fmt::format("Failed to decode center component at index {}", idx));
-      }
-      ret.center[idx] = std::move(temp.value());
-    }
-
-    {
-      auto temp = decode<real_t>(nj.at("x_span"));
-      if (!temp.has_value()) {
-        return tl::make_unexpected(
-            fmt::format("Failed to decode center x_span"));
-      }
-      ret.x_span = std::move(temp.value());
-    }
-    {
-      auto temp = decode<real_t>(nj.at("y_span"));
-      if (!temp.has_value()) {
-        return tl::make_unexpected(
-            fmt::format("Failed to decode center y_span"));
-      }
-      ret.y_span = std::move(temp.value());
-    }
-  } catch (std::exception& e) {
-    return tl::make_unexpected(
-        fmt::format("Failed to parse json. Detail: {}", e.what()));
-  }
-  return ret;
 }
 
 }  // namespace internal
@@ -217,8 +199,7 @@ class newton_equation : public newton_equation_base {
     return ss.str();
   }
 
-  virtual void compute_difference(const complex_t& z,
-                                  complex_t& dst) const noexcept {
+  void compute_difference(const complex_t& z, complex_t& dst) const noexcept {
     // dst = 0;
     dst = this->item_at_order(0);
     complex_t z_power = z;
@@ -230,7 +211,7 @@ class newton_equation : public newton_equation_base {
     dst += z_power;
   }
 
-  [[nodiscard]] virtual complex_t compute_difference(
+  [[nodiscard]] complex_t compute_difference(
       const complex_t& z) const noexcept {
     complex_t ret;
     this->compute_difference(z, ret);
@@ -274,7 +255,7 @@ class newton_equation : public newton_equation_base {
     }
   }
 
-  void iterate_n(std::any& z, int n) const noexcept override {
+  void iterate_n(std::any& z, int n) const noexcept {
     this->iterate_n(*std::any_cast<complex_t>(&z), n);
   }
 
@@ -306,11 +287,13 @@ class newton_equation : public newton_equation_base {
         std::complex<double>{double(min_diff.real()), double(min_diff.imag())}};
   }
 
+  /*
   std::optional<single_result> compute_single(
       std::any& z_any, int iteration_times) const noexcept override {
     complex_t& z = *std::any_cast<complex_t>(&z_any);
     return this->compute_single(z, iteration_times);
   }
+  */
 
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
                compute_row_option& opt) const noexcept override {
@@ -363,16 +346,24 @@ class newton_equation : public newton_equation_base {
   }
 
  public:
-  [[nodiscard]] tl::expected<std::unique_ptr<fractal_utils::wind_base>,
-                             std::string>
-  load_wind(const njson& nj) const noexcept  // override
-  {
-    auto ret = internal::load_window<real_type>(nj);
-    if (ret.has_value()) {
-      return std::unique_ptr<fractal_utils::wind_base>{
-          new fractal_utils::center_wind<real_type>{std::move(ret.value())}};
+  [[nodiscard]] njson::array_t to_json() const noexcept override {
+    njson::array_t ret;
+    ret.reserve(this->order());
+
+    std::vector<uint8_t> bin;
+    std::string hex;
+
+    for (const auto& cplx : this->_points) {
+      njson ::array_t temp;
+      temp.reserve(2);
+      internal::encode_float_to_hex<real_type>(cplx.real(), bin, hex);
+      temp.emplace_back(hex);
+      internal::encode_float_to_hex<real_type>(cplx.imag(), bin, hex);
+      temp.emplace_back(hex);
+
+      ret.emplace_back(std::move(temp));
     }
-    return tl::make_unexpected(std::move(ret.error()));
+    return ret;
   }
 };
 

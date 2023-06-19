@@ -144,6 +144,39 @@ class object_creator_default_impl : public object_creator {
     return r;
   }
 
+  [[nodiscard]] tl::expected<njson, std::string> save_window(
+      const fractal_utils::wind_base& wb) const noexcept override {
+    if (!wb.float_type_matches<real_type>()) {
+      return tl::make_unexpected(
+          fmt::format("Type of floating point number mismatch."));
+    }
+
+    const auto& wind =
+        dynamic_cast<const fractal_utils::center_wind<real_type>&>(wb);
+
+    std::vector<uint8_t> bin;
+    std::string hex;
+    njson ret;
+
+    {
+      njson::array_t center;
+      center.resize(2);
+      for (size_t i = 0; i < 2; i++) {
+        internal::encode_float_to_hex(wind.center[i], bin, hex);
+        center[i] = hex;
+      }
+      ret.emplace("center", std::move(center));
+    }
+
+    internal::encode_float_to_hex(wind.x_span, bin, hex);
+    ret.emplace("x_span", hex);
+
+    internal::encode_float_to_hex(wind.y_span, bin, hex);
+    ret.emplace("x_span", hex);
+
+    return ret;
+  }
+
  protected:
   [[nodiscard]] tl::expected<std::vector<complex_type>, std::string>
   decode_points(const njson& nj) const noexcept {
@@ -312,6 +345,11 @@ object_creator::create(fractal_utils::float_backend_lib backend,
           fmt::format("Unsupported option: backend = {}, precision = {}.",
                       magic_enum::enum_name(backend), precision));
   }
+}
+
+njson::array_t object_creator::save_equation(
+    const newton_equation_base& neb) const noexcept {
+  return neb.to_json();
 }
 
 }  // namespace newton_fractal

@@ -176,6 +176,7 @@ auto newton_equation_mpc::compute_single(complex_type& z,
                                                      double(min_diff.imag())}};
 }
 
+/*
 auto newton_equation_mpc::compute_single(std::any& z_any,
                                          int iteration_times) const noexcept
     -> std::optional<single_result> {
@@ -183,6 +184,7 @@ auto newton_equation_mpc::compute_single(std::any& z_any,
   return this->compute_single(z, iteration_times);
 }
 
+*/
 void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                                   int iteration_times,
                                   compute_row_option& opt) const noexcept {

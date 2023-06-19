@@ -15,6 +15,7 @@
 #include <core_utils.h>
 #include <memory>
 #include <nlohmann/json.hpp>
+
 using njson = nlohmann::json;
 
 namespace newton_fractal {
@@ -27,15 +28,19 @@ class newton_equation_base {
 
   [[nodiscard]] virtual std::string to_string() const noexcept = 0;
 
+  /*
   virtual void iterate_n(std::any &z, int iteration_times) const noexcept = 0;
+  */
 
   struct single_result {
     int nearest_point_idx;
     std::complex<double> difference;
   };
 
+  /*
   [[nodiscard]] virtual std::optional<single_result> compute_single(
       std::any &z, int iteration_times) const noexcept = 0;
+  */
 
   struct compute_row_option {
     fractal_utils::map_view bool_has_result;
@@ -48,6 +53,8 @@ class newton_equation_base {
                        compute_row_option &opt) const noexcept = 0;
 
   virtual void clear() & noexcept = 0;
+
+  virtual njson::array_t to_json() const noexcept = 0;
 
  public:
   /* [[nodiscard]] virtual

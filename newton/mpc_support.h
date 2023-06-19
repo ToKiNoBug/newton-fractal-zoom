@@ -58,10 +58,10 @@ class newton_equation_mpc
   void add_point(const boostmp::mpc_complex& point) & noexcept;
 
   void compute_difference(const complex_type& z,
-                          complex_type& dst) const noexcept override;
+                          complex_type& dst) const noexcept;
 
   [[nodiscard]] complex_type compute_difference(
-      const complex_type& z) const noexcept override {
+      const complex_type& z) const noexcept {
     complex_type ret;
     this->compute_difference(z, ret);
     return ret;
@@ -71,15 +71,19 @@ class newton_equation_mpc
 
   void iterate_n(complex_type& z, int n) const noexcept;
 
-  void iterate_n(std::any& z, int n) const noexcept override {
+  /*
+  void iterate_n(std::any& z, int n) const noexcept {
     this->iterate_n(*std::any_cast<complex_type>(&z), n);
   }
+  */
 
   std::optional<single_result> compute_single(
       complex_type& z, int iteration_times) const noexcept;
 
+  /*
   std::optional<single_result> compute_single(
       std::any& z_any, int iteration_times) const noexcept override;
+  */
 
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
                compute_row_option& opt) const noexcept override;
