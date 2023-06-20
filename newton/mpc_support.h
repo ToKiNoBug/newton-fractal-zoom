@@ -66,9 +66,11 @@ class newton_equation_mpc
     this->compute_difference(z, ret);
     return ret;
   }
-  void iterate_inplace(complex_type& z) const noexcept;
+  void iterate_inplace(complex_type& z, buffer_t& buf) const noexcept;
+
   [[nodiscard]] complex_type iterate(const complex_type& z) const noexcept;
 
+  void iterate_n(complex_type& z, int n, buffer_t& buf) const noexcept;
   void iterate_n(complex_type& z, int n) const noexcept;
 
   /*
@@ -77,8 +79,9 @@ class newton_equation_mpc
   }
   */
 
-  std::optional<single_result> compute_single(
-      complex_type& z, int iteration_times) const noexcept;
+  std::optional<single_result> compute_single(complex_type& z,
+                                              int iteration_times,
+                                              buffer_t& buf) const noexcept;
 
   /*
   std::optional<single_result> compute_single(

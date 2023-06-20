@@ -238,6 +238,18 @@ class object_creator_by_prec
     newton_equation_base* eqp = new equation_fixed_prec<prec>{points.value()};
     return std::unique_ptr<newton_equation_base>{eqp};
   }
+
+  tl::expected<void, std::string> set_precision(
+      fractal_utils::wind_base&) const noexcept override {
+    return tl::make_unexpected(fmt::format(
+        "Can not set precision. Precision is fixed at {}.", this->precision()));
+  }
+
+  tl::expected<void, std::string> set_precision(
+      newton_equation_base&) const noexcept override {
+    return tl::make_unexpected(fmt::format(
+        "Can not set precision. Precision is fixed at {}.", this->precision()));
+  }
 };
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -291,6 +303,32 @@ class object_creator_mpc
     newton_equation_base* eqp =
         new newton_equation_mpc{points.value(), this->precision()};
     return std::unique_ptr<newton_equation_base>{eqp};
+  }
+
+  tl::expected<void, std::string> set_precision(
+      fractal_utils::wind_base& wind) const noexcept override {
+    if (!wind.float_type_matches<real_type>()) {
+      return tl::make_unexpected(
+          fmt::format("Can not set precision. Floating type mismatch."));
+    }
+
+    auto& cwind = dynamic_cast<fractal_utils::center_wind<real_type>&>(wind);
+    cwind.x_span.precision(this->precision());
+    cwind.y_span.precision(this->precision());
+    cwind.center[0].precision(this->precision());
+    cwind.center[1].precision(this->precision());
+    return {};
+  }
+
+  tl::expected<void, std::string> set_precision(
+      newton_equation_base& eq) const noexcept override {
+    auto eqp = dynamic_cast<newton_equation_mpc*>(&eq);
+    if (eqp == nullptr) {
+      return tl::make_unexpected(
+          "Can not set precision. The floating type is not mpc");
+    }
+    eqp->set_precision(this->precision());
+    return {};
   }
 };
 

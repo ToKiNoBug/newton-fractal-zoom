@@ -4,6 +4,29 @@
 #include <fstream>
 #include <fmt/format.h>
 #include <omp.h>
+#include <atomic>
+
+#include <gmp.h>
+
+std::atomic<size_t> num_malloc{0};
+std::atomic<size_t> num_realloc{0};
+
+void* (*realloc_func_ptr)(void*, size_t, size_t) = nullptr;
+
+void* my_malloc(size_t sz) noexcept {
+  num_malloc++;
+  return malloc(sz);
+}
+
+void* my_realloc(void* ptr, size_t a, size_t b) {
+  num_realloc++;
+  return realloc_func_ptr(ptr, a, b);
+}
+
+void replace_memory_functions_gmp() noexcept {
+  mp_get_memory_functions(nullptr, &realloc_func_ptr, nullptr);
+  mp_set_memory_functions(my_malloc, my_realloc, nullptr);
+}
 
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
   nf::meta_data metadata;
@@ -31,11 +54,27 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
 
   omp_set_num_threads(ct.threads);
 
+  if (!metadata.obj_creator->set_precision(*metadata.window)) {
+    return tl::make_unexpected("Failed to update precision for window.");
+  }
+  
+  if (!metadata.obj_creator->set_precision(*metadata.equation)) {
+    return tl::make_unexpected("Failed to update precision for equation.");
+  }
+
+  replace_memory_functions_gmp();
   double wtime = omp_get_wtime();
   metadata.equation->compute(*metadata.window, metadata.iteration, option);
   wtime = omp_get_wtime() - wtime;
 
   fmt::print("Computation finished with {} seconds.\n", wtime);
+
+  fmt::print("malloc is runned {} times, and realloc runned {} times.\n",
+             num_malloc.load(), num_realloc.load());
+  const double times =
+      double(metadata.rows) * metadata.cols * metadata.iteration;
+  fmt::print("Avarange times: malloc {}/iter, realloc {}/iter.\n",
+             num_malloc.load() / times, num_realloc.load() / times);
 
   return {};
 }
