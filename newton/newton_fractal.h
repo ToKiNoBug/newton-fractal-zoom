@@ -38,12 +38,19 @@ struct meta_data {
   std::unique_ptr<object_creator> obj_creator{nullptr};
   std::unique_ptr<fractal_utils::wind_base> window{nullptr};
   std::unique_ptr<newton_equation_base> equation{nullptr};
+
+  inline bool can_compute() const noexcept {
+    return !(this->obj_creator == nullptr || this->window == nullptr ||
+             this->equation == nullptr);
+  }
 };
 
-tl::expected<meta_data, std::string> load_metadata(const njson& nj) noexcept;
 tl::expected<meta_data, std::string> load_metadata(
-    std::string_view json) noexcept;
-tl::expected<meta_data, std::string> load_metadata(std::istream& is) noexcept;
+    const njson& nj, bool ignore_compute_objects) noexcept;
+tl::expected<meta_data, std::string> load_metadata(
+    std::string_view json, bool ignore_compute_objects) noexcept;
+tl::expected<meta_data, std::string> load_metadata(
+    std::istream& is, bool ignore_compute_objects) noexcept;
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept;
 

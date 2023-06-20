@@ -32,7 +32,7 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
   nf::meta_data metadata;
   {
     std::ifstream ifs{ct.filename};
-    auto md_e = nf::load_metadata(ifs);
+    auto md_e = nf::load_metadata(ifs, false);
     if (!md_e.has_value()) {
       return tl::make_unexpected(
           fmt::format("Failed to laod meta data. Detail: {}", md_e.error()));
@@ -63,7 +63,7 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
       return tl::make_unexpected("Failed to update precision for equation.");
     }
   }
-  
+
   if (ct.track_memory) {
     replace_memory_functions_gmp();
   }

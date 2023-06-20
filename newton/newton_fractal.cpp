@@ -7,7 +7,7 @@
 namespace newton_fractal {
 
 tl::expected<meta_data, std::string> load_metadata(
-    std::string_view json) noexcept {
+    std::string_view json, bool ignore_compute_objects) noexcept {
   njson nj;
   try {
     nj = njson::parse(json, nullptr, true, true);
@@ -16,10 +16,11 @@ tl::expected<meta_data, std::string> load_metadata(
         fmt::format("Failed to parse json. Detail: {}.", e.what()));
   }
 
-  return load_metadata(nj);
+  return load_metadata(nj, ignore_compute_objects);
 }
 
-tl::expected<meta_data, std::string> load_metadata(std::istream& is) noexcept {
+tl::expected<meta_data, std::string> load_metadata(
+    std::istream& is, bool ignore_compute_objects) noexcept {
   njson nj;
   try {
     nj = njson::parse(is, nullptr, true, true);
@@ -28,10 +29,11 @@ tl::expected<meta_data, std::string> load_metadata(std::istream& is) noexcept {
         fmt::format("Failed to parse json. Detail: {}.", e.what()));
   }
 
-  return load_metadata(nj);
+  return load_metadata(nj, ignore_compute_objects);
 }
 
-tl::expected<meta_data, std::string> load_metadata(const njson& nj) noexcept {
+tl::expected<meta_data, std::string> load_metadata(
+    const njson& nj, bool ignore_compute_objects) noexcept {
   meta_data ret;
 
   try {
@@ -56,6 +58,10 @@ tl::expected<meta_data, std::string> load_metadata(const njson& nj) noexcept {
     if (ret.iteration <= 1) {
       return tl::make_unexpected(fmt::format(
           "The value for iteration({}) is too small.", ret.iteration));
+    }
+
+    if (ignore_compute_objects) {
+      return ret;
     }
 
     {

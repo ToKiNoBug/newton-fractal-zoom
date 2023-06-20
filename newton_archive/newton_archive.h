@@ -14,11 +14,32 @@ class newton_archive {
  private:
   meta_data m_info;
 
-  fu::unique_map map_is_number{0, 0, 1};
+  fu::unique_map m_map_has_result{0, 0, sizeof(bool)};
+  fu::unique_map m_map_nearest_point_idx{0, 0, sizeof(uint8_t)};
+  fu::unique_map m_map_complex_difference{0, 0, sizeof(std::complex<double>)};
 
  public:
-  auto &info() noexcept { return this->m_info; }
-  const auto &info() const noexcept { return this->m_info; }
+  [[nodiscard]] auto &info() noexcept { return this->m_info; }
+  [[nodiscard]] const auto &info() const noexcept { return this->m_info; }
+
+  auto &map_has_result() noexcept { return this->m_map_has_result; }
+  [[nodiscard]] const auto &map_has_result() const noexcept {
+    return this->m_map_has_result;
+  }
+
+  [[nodiscard]] auto &map_nearest_point_idx() noexcept {
+    return this->m_map_nearest_point_idx;
+  }
+  [[nodiscard]] const auto &map_nearest_point_idx() const noexcept {
+    return this->m_map_nearest_point_idx;
+  }
+
+  [[nodiscard]] auto &map_complex_difference() noexcept {
+    return this->m_map_complex_difference;
+  }
+  [[nodiscard]] const auto &map_complex_difference() const noexcept {
+    return this->m_map_complex_difference;
+  }
 };
 
 }  // namespace newton_fractal
