@@ -22,6 +22,7 @@ struct compute_task {
 
   std::string archive_filename;
   uint32_t threads;
+  bool track_memory{false};
 };
 
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept;

@@ -1,6 +1,10 @@
 {
+  /*
   "backend": "mpfr",
   "precision": 71,
+  */
+  "backend": "boost",
+  "precision": 8,
   "window": {
     "center": [
       0,

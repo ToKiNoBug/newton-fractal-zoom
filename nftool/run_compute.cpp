@@ -54,27 +54,33 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
 
   omp_set_num_threads(ct.threads);
 
-  if (!metadata.obj_creator->set_precision(*metadata.window)) {
-    return tl::make_unexpected("Failed to update precision for window.");
+  if (!metadata.obj_creator->is_fixed_precision()) {
+    if (!metadata.obj_creator->set_precision(*metadata.window)) {
+      return tl::make_unexpected("Failed to update precision for window.");
+    }
+
+    if (!metadata.obj_creator->set_precision(*metadata.equation)) {
+      return tl::make_unexpected("Failed to update precision for equation.");
+    }
   }
   
-  if (!metadata.obj_creator->set_precision(*metadata.equation)) {
-    return tl::make_unexpected("Failed to update precision for equation.");
+  if (ct.track_memory) {
+    replace_memory_functions_gmp();
   }
 
-  replace_memory_functions_gmp();
   double wtime = omp_get_wtime();
   metadata.equation->compute(*metadata.window, metadata.iteration, option);
   wtime = omp_get_wtime() - wtime;
 
   fmt::print("Computation finished with {} seconds.\n", wtime);
-
-  fmt::print("malloc is runned {} times, and realloc runned {} times.\n",
-             num_malloc.load(), num_realloc.load());
-  const double times =
-      double(metadata.rows) * metadata.cols * metadata.iteration;
-  fmt::print("Avarange times: malloc {}/iter, realloc {}/iter.\n",
-             num_malloc.load() / times, num_realloc.load() / times);
+  if (ct.track_memory) {
+    fmt::print("malloc is runned {} times, and realloc runned {} times.\n",
+               num_malloc.load(), num_realloc.load());
+    const double times =
+        double(metadata.rows) * metadata.cols * metadata.iteration;
+    fmt::print("Avarange times: malloc {}/iter, realloc {}/iter.\n",
+               num_malloc.load() / times, num_realloc.load() / times);
+  }
 
   return {};
 }

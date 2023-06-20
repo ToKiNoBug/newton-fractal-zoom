@@ -5,6 +5,132 @@
 namespace nf = newton_fractal;
 using nf::newton_equation_mpc;
 
+void nf::mpc_mul_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
+                                  mpc_ptr buf) {
+  assert(z1 != z2);
+  assert(z1 != buf);
+  assert(z2 != buf);
+
+  // mpf_class &a = this->_real;
+  mpfr_ptr a = mpc_realref(z1);
+  // mpf_class &b = this->_imag;
+  mpfr_ptr b = mpc_imagref(z1);
+  // const mpf_class &c = Z._real;
+  mpfr_srcptr c = mpc_realref(z2);
+  // const mpf_class &d = Z._imag;
+  mpfr_srcptr d = mpc_imagref(z2);
+
+  // mpf_class &bd = buf.float_arr[0];
+  mpfr_ptr bd = mpc_realref(buf);
+  // mpf_class &ad = buf.float_arr[1];
+  mpfr_ptr ad = mpc_imagref(buf);
+
+  // bd = b * d;
+  mpfr_mul(bd, b, d, MPC_RND_IM(rnd));
+
+  // ad = a * d;
+  mpfr_mul(ad, a, d, MPC_RND_RE(rnd));
+
+  // a->ac, b-> bc
+  // a *= Z._real;
+  mpfr_mul(a, a, c, MPC_RND_RE(rnd));
+  // b *= Z._real;
+  mpfr_mul(b, b, c, MPC_RND_IM(rnd));
+
+  // a -= bd;
+  mpfr_sub(a, a, bd, MPC_RND_RE(rnd));
+  // b += ad;
+  mpfr_add(b, b, ad, MPC_RND_IM(rnd));
+}
+
+void nf::mpc_mul_buffered(mpc_ptr dst, mpc_srcptr z1, mpc_srcptr z2,
+                          mpc_rnd_t rnd, mpc_ptr buf) noexcept {
+  assert(z1 != dst);
+  assert(z2 != dst);
+  assert(buf != dst);
+  assert(buf != z1);
+  assert(buf != z2);
+
+  mpfr_srcptr a = mpc_realref(z1);
+  mpfr_srcptr b = mpc_imagref(z1);
+  mpfr_srcptr c = mpc_realref(z2);
+  mpfr_srcptr d = mpc_imagref(z2);
+
+  mpfr_mul(mpc_realref(dst), a, c, MPC_RND_RE(rnd));
+  mpfr_mul(mpc_imagref(dst), b, c, MPC_RND_IM(rnd));
+
+  mpfr_ptr bd = mpc_realref(buf);
+  mpfr_ptr ad = mpc_imagref(buf);
+  mpfr_mul(bd, b, d, MPC_RND_RE(rnd));
+  mpfr_mul(ad, a, d, MPC_RND_IM(rnd));
+
+  mpfr_sub(mpc_realref(dst), mpc_realref(dst), bd, MPC_RND_RE(rnd));
+  mpfr_add(mpc_imagref(dst), mpc_imagref(dst), ad, MPC_RND_IM(rnd));
+}
+
+/*
+void nf::mpc_div_buffered(mpc_ptr dst, mpc_srcptr a, mpc_srcptr b,
+                          mpc_rnd_t rnd, mpc_ptr buf) noexcept {}
+*/
+
+void nf::mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
+                                  mpc_ptr buf) {
+  assert(z1 != z2);
+  assert(buf != z1);
+  assert(buf != z2);
+  // mpf_class &a = this->_real;
+  // mpf_class &b = this->_imag;
+  mpfr_ptr a = mpc_realref(z1);
+  mpfr_ptr b = mpc_imagref(z1);
+
+  // const mpf_class& c = Z._real;
+  // const mpf_class& d = Z._imag;
+  mpfr_srcptr c = mpc_realref(z2);
+  mpfr_srcptr d = mpc_imagref(z2);
+
+  {
+    // mpf_class& bd = buf.float_arr[0];
+    // mpf_class& ad = buf.float_arr[1];
+    mpfr_ptr bd = mpc_realref(buf);
+    mpfr_ptr ad = mpc_imagref(buf);
+
+    // bd = b * d;
+    mpfr_mul(bd, b, d, MPC_RND_IM(rnd));
+
+    // ad = a * d;
+    mpfr_mul(ad, a, d, MPC_RND_RE(rnd));
+
+    // a->ac, b-> bc
+    // a *= c;
+    // b *= c;
+    mpfr_mul(a, a, c, MPC_RND_RE(rnd));
+    mpfr_mul(b, b, c, MPC_RND_IM(rnd));
+
+    // a += bd;
+    // b -= ad;
+    mpfr_add(a, a, ad, MPC_RND_RE(rnd));
+    mpfr_sub(b, b, ad, MPC_RND_IM(rnd));
+  }
+  {
+    // auto& c2 = buf.float_arr[0];
+    // auto& d2 = buf.float_arr[1];
+    mpfr_ptr c2 = mpc_realref(buf);
+    mpfr_ptr d2 = mpc_imagref(buf);
+
+    // c2 = c * c;
+    mpfr_mul(c2, c, c, MPC_RND_RE(rnd));
+    // d2 = d * d;
+    mpfr_mul(d2, d, d, MPC_RND_IM(rnd));
+    // c2 += d2;  // c2-> c2+d2
+    mpfr_add(c2, c2, d2, MPC_RND_RE(rnd));
+
+    // a /= c2;
+    // b /= c2;
+    mpfr_sub(a, a, c2, MPC_RND_RE(rnd));
+    mpfr_sub(b, b, c2, MPC_RND_IM(rnd));
+  }
+}
+
 newton_equation_mpc::newton_equation_mpc(int precision) {
   this->_precision = precision;
 }
@@ -105,9 +231,11 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
 
   auto& z_power = buf.complex_arr[2];
   auto& temp = buf.complex_arr[3];
+  auto& extra_buf = buf.complex_arr[4];
   assert(f.precision() == df.precision());
   assert(df.precision() == z_power.precision());
   assert(temp.precision() == z.precision());
+  assert(z.precision() == extra_buf.precision());
 
   // f = this->item_at_order(0);
   // f.precision(this->_precision);
@@ -126,8 +254,12 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
   for (int n = 1; n < this->order(); n++) {
     {
       // temp = this->item_at_order(n) * z_power;
-      mpc_mul(temp.backend().data(), z_power.backend().data(),
-              this->item_at_order(n).backend().data(), MPC_RNDNN);
+      /*mpc_mul(temp.backend().data(), z_power.backend().data(),
+                    this->item_at_order(n).backend().data(), MPC_RNDNN);
+            */
+      mpc_mul_buffered(temp.backend().data(), z_power.backend().data(),
+                       this->item_at_order(n).backend().data(), MPC_RNDNN,
+                       extra_buf.backend().data());
 
       // f += temp;
       mpc_add(f.backend().data(), f.backend().data(), temp.backend().data(),
@@ -142,8 +274,9 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
                    MPC_RNDNN);
       } else {
         // temp = this->item_at_order(n + 1) * z_power;
-        mpc_mul(temp.backend().data(), z_power.backend().data(),
-                this->item_at_order(n + 1).backend().data(), MPC_RNDNN);
+        mpc_mul_buffered(temp.backend().data(), z_power.backend().data(),
+                         this->item_at_order(n + 1).backend().data(), MPC_RNDNN,
+                         extra_buf.backend().data());
         // temp *= (n + 1);
         mpc_mul_ui(temp.backend().data(), temp.backend().data(), n + 1,
                    MPC_RNDNN);
@@ -153,8 +286,8 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
               MPC_RNDNN);
     }
     // z_power *= z;
-    mpc_mul(z_power.backend().data(), z_power.backend().data(),
-            z.backend().data(), MPC_RNDNN);
+    mpc_mul_inplace_buffered(z_power.backend().data(), z.backend().data(),
+                             MPC_RNDNN, extra_buf.backend().data());
   }
 
   // f += z_power;
@@ -162,8 +295,11 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
           MPC_RNDNN);
 
   // f /= df;
-  mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
+  /*mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
           MPC_RNDNN);
+  */
+  mpc_div_inplace_buffered(f.backend().data(), df.backend().data(), MPC_RNDNN,
+                           extra_buf.backend().data());
 
   // z -= f;
   mpc_sub(z.backend().data(), z.backend().data(), f.backend().data(),
@@ -269,10 +405,9 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   const boostmp::mpfr_float r_unit = -wind.y_span / rows;
   const boostmp::mpfr_float c_unit = wind.x_span / cols;
 
-  /*
 #pragma omp parallel for schedule(guided) default(none) \
     shared(rows, cols, r_unit, c_unit, r0, c0, iteration_times, opt)
-  */
+
   for (int r = 0; r < (int)rows; r++) {
     thread_local complex_type z{0, 0, (uint32_t)this->_precision};
     thread_local buffer_t buf{this->_precision};

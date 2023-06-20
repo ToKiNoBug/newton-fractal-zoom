@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     compute->add_option("-o", ct.archive_filename)->required();
     compute->add_option("--rows", ct.row_override);
     compute->add_option("-j,--threads", ct.threads);
+    compute->add_flag("--track-memory", ct.track_memory)->default_val(false);
   }
 
   CLI11_PARSE(capp, argc, argv);

@@ -20,7 +20,7 @@ class newton_equation_mpc
   int _precision{50};
 
   struct buffer_t {
-    std::array<boostmp::mpc_complex, 4> complex_arr;
+    std::array<boostmp::mpc_complex, 5> complex_arr;
     std::array<boostmp::mpfr_float, 2> real_arr;
 
     buffer_t() = default;
@@ -91,6 +91,18 @@ class newton_equation_mpc
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
                compute_option& opt) const noexcept override;
 };
+
+void mpc_mul_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
+                              mpc_ptr buf);
+void mpc_mul_buffered(mpc_ptr dst, mpc_srcptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
+                      mpc_ptr buf) noexcept;
+
+/*
+void mpc_div_buffered(mpc_ptr dst, mpc_srcptr a, mpc_srcptr b, mpc_rnd_t rnd,
+                      mpc_ptr buf) noexcept;
+*/
+void mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
+                              mpc_ptr buf);
 
 }  // namespace newton_fractal
 
