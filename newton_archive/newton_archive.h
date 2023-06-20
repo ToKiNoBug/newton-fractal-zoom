@@ -67,9 +67,6 @@ class newton_archive {
   [[nodiscard]] tl::expected<void, std::string> save_raw(
       std::string_view filename) const noexcept;
 
-  [[nodiscard]] tl::expected<void, std::string> save_zstd(
-      std::string_view filename) const noexcept;
-
   [[nodiscard]] tl::expected<void, std::string> load(
       std::istream &is, bool ignore_compute_objects,
       std::span<uint8_t> buffer) & noexcept;

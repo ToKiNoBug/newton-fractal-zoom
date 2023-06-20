@@ -8,8 +8,8 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filter/zstd.hpp>
-#include <zstd.h>
-#include <filesystem>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include <magic_enum.hpp>
 
 namespace stdfs = std::filesystem;
@@ -112,19 +112,6 @@ tl::expected<void, std::string> newton_archive::save_raw(
   ofs.close();
   return ret;
 }
-tl::expected<void, std::string> newton_archive::save_zstd(
-    std::string_view filename) const noexcept {
-  if (!filename.ends_with(".nfar.zst")) {
-    return tl::make_unexpected(fmt::format(
-        "The file extension must be .nfar.zst, but the given filename is {}",
-        filename));
-  }
-  boost::iostreams::filtering_ostream fos;
-  fos.push(boost::iostreams::zstd_compressor{});
-  fos.push(boost::iostreams::file_sink(filename.data()));
-
-  return this->save(fos);
-}
 
 tl::expected<void, std::string> newton_archive::save(
     std::string_view filename) const noexcept {
@@ -132,12 +119,29 @@ tl::expected<void, std::string> newton_archive::save(
     return this->save_raw(filename);
   }
 
+  boost::iostreams::filtering_ostream fos;
+  fos.set_auto_close(true);
+  bool match{false};
+
   if (filename.ends_with(".nfar.zst")) {
-    return this->save_zstd(filename);
+    fos.push(boost::iostreams::zstd_compressor{});
+    match = true;
+  }
+  if (filename.ends_with(".nfar.zlib")) {
+    fos.push(boost::iostreams::zlib_compressor{});
+    match = true;
+  }
+  if (filename.ends_with(".nfar.gz")) {
+    fos.push(boost::iostreams::gzip_compressor{});
+    match = true;
   }
 
-  return tl::make_unexpected(fmt::format(
-      "Failed to deduce file format from filename \"{}\"", filename));
+  if (!match) {
+    return tl::make_unexpected(fmt::format(
+        "Failed to deduce file format from filename \"{}\"", filename));
+  }
+  fos.push(boost::iostreams::file_sink(filename.data()));
+  return this->save(fos);
 }
 
 tl::expected<void, std::string> newton_archive::load(
@@ -172,23 +176,23 @@ tl::expected<void, std::string> newton_archive::load(
   }
   this->setup_matrix();
 
-#define NF_PRIVATE_MARCO_LOAD_MATRIX(tag_enum_name, map_member_name)        \
-  {                                                                         \
-    auto blk = ar.find_first_of(int64_t(data_tag::tag_enum_name));          \
-    if (blk == nullptr) {                                                   \
-      return tl::make_unexpected(                                           \
-          fmt::format("Failed to find data block with tag {} (aka {})",     \
-                      int64_t(data_tag::tag_enum_name),                     \
-                      magic_enum::enum_name(data_tag::tag_enum_name)));     \
-    }                                                                       \
-    if (blk->bytes() != this->m_map_has_result.bytes()) {                   \
-      return tl::make_unexpected(fmt::format(                               \
-          "Data length mismatch for {}: expected {} "                       \
-          "bytes, but actually {} bytes.",                                  \
-          #map_member_name, this->m_map_has_result.bytes(), blk->bytes())); \
-    }                                                                       \
-    memcpy(this->map_member_name.data(), blk->data(),                       \
-           this->map_member_name.bytes());                                  \
+#define NF_PRIVATE_MARCO_LOAD_MATRIX(tag_enum_name, map_member_name)       \
+  {                                                                        \
+    auto blk = ar.find_first_of(int64_t(data_tag::tag_enum_name));         \
+    if (blk == nullptr) {                                                  \
+      return tl::make_unexpected(                                          \
+          fmt::format("Failed to find data block with tag {} (aka {})",    \
+                      int64_t(data_tag::tag_enum_name),                    \
+                      magic_enum::enum_name(data_tag::tag_enum_name)));    \
+    }                                                                      \
+    if (blk->bytes() != this->map_member_name.bytes()) {                   \
+      return tl::make_unexpected(fmt::format(                              \
+          "Data length mismatch for {}: expected {} "                      \
+          "bytes, but actually {} bytes.",                                 \
+          #map_member_name, this->map_member_name.bytes(), blk->bytes())); \
+    }                                                                      \
+    memcpy(this->map_member_name.data(), blk->data(),                      \
+           this->map_member_name.bytes());                                 \
   }
 
   // load map_has_result
@@ -222,6 +226,14 @@ tl::expected<void, std::string> newton_archive::load(
   bool match = false;
   if (filename.ends_with(".nfar.zst")) {
     fls.push(boost::iostreams::zstd_decompressor{});
+    match = true;
+  }
+  if (filename.ends_with(".nfar.zlib")) {
+    fls.push(boost::iostreams::zlib_decompressor{});
+    match = true;
+  }
+  if (filename.ends_with(".nfar.gz")) {
+    fls.push(boost::iostreams::gzip_decompressor{});
     match = true;
   }
 
