@@ -5,8 +5,16 @@
       "precision": 71
     },
     {
+      "backend": "mpfr",
+      "precision": 147
+    },
+    {
       "backend": "boost",
       "precision": 8
+    },
+    {
+      "backend": "boost",
+      "precision": 16
     },
     {
       "backend": "standard",
@@ -14,7 +22,7 @@
     }
   ],
   "backend": "mpfr",
-  "precision": 4932,
+  "precision": 71,
   "window": {
     "center": [
       0,
