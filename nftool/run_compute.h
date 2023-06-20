@@ -10,6 +10,9 @@
 #include <tl/expected.hpp>
 #include <thread>
 
+namespace newton_fractal {
+class newton_archive;
+}
 struct compute_task {
   compute_task() : threads{std::thread::hardware_concurrency()} {}
 
@@ -23,8 +26,8 @@ struct compute_task {
   std::string archive_filename;
   uint32_t threads;
   bool track_memory{false};
+  newton_fractal::newton_archive* return_archive{nullptr};
 };
-
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept;
 
 #endif  // NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H

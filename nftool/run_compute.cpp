@@ -5,7 +5,7 @@
 #include <fmt/format.h>
 #include <omp.h>
 #include <atomic>
-
+#include <newton_archive.h>
 #include <gmp.h>
 
 std::atomic<size_t> num_malloc{0};
@@ -29,7 +29,7 @@ void replace_memory_functions_gmp() noexcept {
 }
 
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
-  nf::meta_data metadata;
+  nf::newton_archive ar;
   {
     std::ifstream ifs{ct.filename};
     auto md_e = nf::load_metadata(ifs, false);
@@ -37,29 +37,22 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
       return tl::make_unexpected(
           fmt::format("Failed to laod meta data. Detail: {}", md_e.error()));
     }
-    metadata = std::move(md_e.value());
+    ar.info() = std::move(md_e.value());
   }
+  ar.setup_matrix();
 
-  fu::unique_map cplx{static_cast<size_t>(metadata.rows),
-                      static_cast<size_t>(metadata.cols),
-                      sizeof(std::complex<double>)};
-
-  fu::unique_map idx{static_cast<size_t>(metadata.rows),
-                     static_cast<size_t>(metadata.cols), sizeof(uint8_t)};
-
-  fu::unique_map has_result{static_cast<size_t>(metadata.rows),
-                            static_cast<size_t>(metadata.cols), sizeof(bool)};
-
-  nf::newton_equation_base::compute_option option{has_result, idx, cplx};
+  nf::newton_equation_base::compute_option option{ar.map_has_result(),
+                                                  ar.map_nearest_point_idx(),
+                                                  ar.map_complex_difference()};
 
   omp_set_num_threads(ct.threads);
 
-  if (!metadata.obj_creator->is_fixed_precision()) {
-    if (!metadata.obj_creator->set_precision(*metadata.window)) {
+  if (!ar.info().obj_creator->is_fixed_precision()) {
+    if (!ar.info().obj_creator->set_precision(*ar.info().window)) {
       return tl::make_unexpected("Failed to update precision for window.");
     }
 
-    if (!metadata.obj_creator->set_precision(*metadata.equation)) {
+    if (!ar.info().obj_creator->set_precision(*ar.info().equation)) {
       return tl::make_unexpected("Failed to update precision for equation.");
     }
   }
@@ -69,7 +62,7 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
   }
 
   double wtime = omp_get_wtime();
-  metadata.equation->compute(*metadata.window, metadata.iteration, option);
+  ar.info().equation->compute(*ar.info().window, ar.info().iteration, option);
   wtime = omp_get_wtime() - wtime;
 
   fmt::print("Computation finished with {} seconds.\n", wtime);
@@ -77,9 +70,28 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
     fmt::print("malloc is runned {} times, and realloc runned {} times.\n",
                num_malloc.load(), num_realloc.load());
     const double times =
-        double(metadata.rows) * metadata.cols * metadata.iteration;
+        double(ar.info().rows) * ar.info().cols * ar.info().iteration;
     fmt::print("Avarange times: malloc {}/iter, realloc {}/iter.\n",
                num_malloc.load() / times, num_realloc.load() / times);
+  }
+
+  tl::expected<void, std::string> ret{};
+
+  if (ct.filename.empty() && ct.return_archive == nullptr) {
+    fmt::print(
+        "No value assigned to -o, the computation result will not be saved.\n");
+    return {};
+  }
+
+  {
+    auto exp = ar.save(ct.archive_filename);
+    if (!exp.has_value()) {
+      fmt::print("Failed to save computation result. Detail: {}", exp.error());
+    }
+  }
+
+  if (ct.return_archive != nullptr) {
+    *ct.return_archive = std::move(ar);
   }
 
   return {};

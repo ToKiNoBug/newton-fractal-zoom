@@ -4,6 +4,7 @@
 #include <optional>
 #include <fmt/format.h>
 #include "run_compute.h"
+#include <newton_archive.h>
 
 int main(int argc, char** argv) {
   CLI::App capp;
@@ -21,9 +22,16 @@ int main(int argc, char** argv) {
     compute->add_flag("--track-memory", ct.track_memory)->default_val(false);
   }
 
+  auto render = capp.add_subcommand("compute");
+
   CLI11_PARSE(capp, argc, argv);
 
+  nf::newton_archive archive;
+
   if (compute->count() > 0) {
+    if (render->count() > 0) {
+      ct.return_archive = &archive;
+    }
     auto result = run_compute(ct);
     if (!result.has_value()) {
       fmt::print("Computation failed. Detail: {}\n", result.error());
