@@ -45,10 +45,10 @@ tl::expected<void, std::string> is_valid_option(
             "Precision for mpfr/mpc must be positive number.");
       }
       return {};
-    }
 #else
       return tl::make_unexpected("mpc support is disabled.");
 #endif
+    }
 
     case fu::float_backend_lib::boost: {
       switch (precision) {

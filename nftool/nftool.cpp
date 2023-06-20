@@ -19,7 +19,9 @@ int main(int argc, char** argv) {
     compute->add_option("-o", ct.archive_filename)->required();
     compute->add_option("--rows", ct.row_override);
     compute->add_option("-j,--threads", ct.threads);
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
     compute->add_flag("--track-memory", ct.track_memory)->default_val(false);
+#endif
   }
 
   auto render = capp.add_subcommand("compute");
