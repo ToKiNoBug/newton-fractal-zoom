@@ -9,10 +9,12 @@ target_include_directories(newton_archive INTERFACE
 
 find_package(Boost COMPONENTS iostreams REQUIRED)
 find_package(zstd REQUIRED)
+find_package(ZLIB REQUIRED)
 #find_package(bzip2 REQUIRED)
 target_link_libraries(newton_archive PUBLIC
         Boost::iostreams
-        zstd::libzstd_shared)
+        zstd::libzstd_shared
+        ZLIB::ZLIB)
 
 
 install(TARGETS newton_archive

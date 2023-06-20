@@ -28,4 +28,6 @@ endif ()
 
 add_subdirectory(newton)
 add_subdirectory(newton_archive)
+
+enable_language(CUDA)
 add_subdirectory(nftool)

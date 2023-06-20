@@ -24,7 +24,12 @@ int main(int argc, char** argv) {
 #endif
   }
 
-  auto render = capp.add_subcommand("compute");
+  auto render = capp.add_subcommand("render");
+  render_task rt;
+  {
+    render->add_option("archive", rt.archive_file);
+    render->add_option("-o", rt.image_filename);
+  }
 
   CLI11_PARSE(capp, argc, argv);
 
@@ -37,6 +42,14 @@ int main(int argc, char** argv) {
     auto result = run_compute(ct);
     if (!result.has_value()) {
       fmt::print("Computation failed. Detail: {}\n", result.error());
+      return 1;
+    }
+  }
+
+  if (render->count() > 0) {
+    auto result = run_render(rt);
+    if (!result.has_value()) {
+      fmt::print("Render failed. Detail: {}\n", result.error());
       return 1;
     }
   }
