@@ -67,21 +67,20 @@ tl::expected<void, std::string> newton_archive::save(
     segs.emplace_back((int64_t)data_tag::metadata, span);
   }
 
-  segs.emplace_back(
-      (int64_t)data_tag::map_has_result,
-      std::span<uint8_t>{reinterpret_cast<uint8_t *>(
-                             const_cast<void *>(this->m_map_has_result.data())),
-                         this->m_map_has_result.bytes()});
+  segs.emplace_back((int64_t)data_tag::map_has_result,
+                    std::span<const uint8_t>{reinterpret_cast<const uint8_t *>(
+                                                 this->m_map_has_result.data()),
+                                             this->m_map_has_result.bytes()});
   segs.emplace_back(
       (int64_t)data_tag::map_nearest_point_idx,
-      std::span<uint8_t>{reinterpret_cast<uint8_t *>(const_cast<void *>(
-                             this->m_map_nearest_point_idx.data())),
-                         this->m_map_nearest_point_idx.bytes()});
+      std::span<const uint8_t>{reinterpret_cast<const uint8_t *>(
+                                   this->m_map_nearest_point_idx.data()),
+                               this->m_map_nearest_point_idx.bytes()});
   segs.emplace_back(
       (int64_t)data_tag::map_complex_difference,
-      std::span<uint8_t>{reinterpret_cast<uint8_t *>(const_cast<void *>(
-                             this->m_map_complex_difference.data())),
-                         this->m_map_complex_difference.bytes()});
+      std::span<const uint8_t>{reinterpret_cast<const uint8_t *>(
+                                   this->m_map_complex_difference.data()),
+                               this->m_map_complex_difference.bytes()});
 
   auto err = ar.save(os);
 
