@@ -77,6 +77,10 @@ class newton_archive {
   [[nodiscard]] tl::expected<void, std::string> load(
       std::string_view filename, bool ignore_compute_objects,
       std::span<uint8_t> buffer) & noexcept;
+
+  [[nodiscard]] static tl::expected<newton_archive, std::string> load_archive(
+      std::string_view filename, bool ignore_compute_objects,
+      std::span<uint8_t> buffer) noexcept;
 };
 
 [[nodiscard]] size_t expected_buffer_size(int rows, int cols) noexcept;

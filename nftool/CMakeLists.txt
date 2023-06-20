@@ -1,6 +1,13 @@
 
-add_executable(nftool nftool.cpp run_compute.h run_compute.cpp)
-target_link_libraries(nftool PRIVATE newton_fractal newton_archive)
+add_executable(nftool
+        nftool.cpp
+        run_compute.h
+        run_compute.cpp
+        run_render.cpp)
+
+target_link_libraries(nftool PRIVATE
+        newton_fractal
+        newton_archive)
 
 target_include_directories(nftool PRIVATE
         ${NF_cli11_include_dir}

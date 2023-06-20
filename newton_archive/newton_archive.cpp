@@ -234,4 +234,16 @@ tl::expected<void, std::string> newton_archive::load(
   return this->load(fls, ignore_compute_objects, buffer);
 }
 
+tl::expected<newton_archive, std::string> newton_archive::load_archive(
+    std::string_view filename, bool ignore_compute_objects,
+    std::span<uint8_t> buffer) noexcept {
+  newton_archive ret;
+
+  auto temp = ret.load(filename, ignore_compute_objects, buffer);
+  if (!temp.has_value()) {
+    return tl::make_unexpected(temp.error());
+  }
+  return ret;
+}
+
 }  // namespace newton_fractal

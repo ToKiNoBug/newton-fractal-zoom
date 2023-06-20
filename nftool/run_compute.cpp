@@ -6,7 +6,9 @@
 #include <omp.h>
 #include <atomic>
 #include <newton_archive.h>
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
 #include <gmp.h>
+#endif
 
 std::atomic<size_t> num_malloc{0};
 std::atomic<size_t> num_realloc{0};
@@ -24,8 +26,10 @@ void* my_realloc(void* ptr, size_t a, size_t b) {
 }
 
 void replace_memory_functions_gmp() noexcept {
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
   mp_get_memory_functions(nullptr, &realloc_func_ptr, nullptr);
   mp_set_memory_functions(my_malloc, my_realloc, nullptr);
+#endif
 }
 
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {

@@ -30,4 +30,12 @@ struct compute_task {
 };
 tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept;
 
+struct render_task {
+  std::optional<std::string> archive_file{std::nullopt};
+  newton_fractal::newton_archive* archive_value{nullptr};
+
+  std::string image_filename;
+};
+tl::expected<void, std::string> run_render(const render_task& rt) noexcept;
+
 #endif  // NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H
