@@ -100,7 +100,7 @@ tl::expected<void, std::string> newton_archive::save_raw(
         filename));
   }
 
-  std::ofstream ofs{filename.data()};
+  std::ofstream ofs{filename.data(), std::ios::binary};
 
   if (!ofs) {
     return tl::make_unexpected(
@@ -140,8 +140,10 @@ tl::expected<void, std::string> newton_archive::save(
     return tl::make_unexpected(fmt::format(
         "Failed to deduce file format from filename \"{}\"", filename));
   }
-  fos.push(boost::iostreams::file_sink(filename.data()));
-  return this->save(fos);
+  fos.push(boost::iostreams::file_sink{filename.data(), std::ios::binary});
+  auto ret = this->save(fos);
+
+  return ret;
 }
 
 tl::expected<void, std::string> newton_archive::load(
@@ -241,7 +243,7 @@ tl::expected<void, std::string> newton_archive::load(
     return tl::make_unexpected(
         fmt::format("Failed to deduce encoding from filename {}", filename));
   }
-  fls.push(boost::iostreams::file_source(filename.data()));
+  fls.push(boost::iostreams::file_source{filename.data(), std::ios::binary});
 
   return this->load(fls, ignore_compute_objects, buffer);
 }
