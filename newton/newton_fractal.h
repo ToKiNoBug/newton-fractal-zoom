@@ -32,17 +32,23 @@ namespace nf = newton_fractal;
 namespace newton_fractal {
 
 struct meta_data {
-  int rows;
-  int cols;
-  int iteration;
+  int rows{0};
+  int cols{0};
+  int iteration{0};
   std::unique_ptr<object_creator> obj_creator{nullptr};
   std::unique_ptr<fractal_utils::wind_base> window{nullptr};
   std::unique_ptr<newton_equation_base> equation{nullptr};
 
-  inline bool can_compute() const noexcept {
+  [[nodiscard]] inline bool can_compute() const noexcept {
     return !(this->obj_creator == nullptr || this->window == nullptr ||
              this->equation == nullptr);
   }
+
+  meta_data() = default;
+  meta_data(meta_data&&) = default;
+  meta_data(const meta_data&) noexcept;
+
+  meta_data& operator=(meta_data&&) noexcept = default;
 };
 
 tl::expected<meta_data, std::string> load_metadata(

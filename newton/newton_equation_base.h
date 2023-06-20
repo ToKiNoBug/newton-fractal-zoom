@@ -54,7 +54,10 @@ class newton_equation_base {
 
   virtual void clear() & noexcept = 0;
 
-  virtual njson::array_t to_json() const noexcept = 0;
+  [[nodiscard]] virtual njson::array_t to_json() const noexcept = 0;
+
+  [[nodiscard]] virtual std::unique_ptr<newton_equation_base> copy()
+      const noexcept = 0;
 
  public:
   /* [[nodiscard]] virtual

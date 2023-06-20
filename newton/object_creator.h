@@ -45,6 +45,9 @@ class object_creator {
 
   [[nodiscard]] virtual njson::array_t save_equation(
       const newton_equation_base&) const noexcept;
+
+  [[nodiscard]] virtual std::unique_ptr<object_creator> copy()
+      const noexcept = 0;
 };
 
 }  // namespace newton_fractal

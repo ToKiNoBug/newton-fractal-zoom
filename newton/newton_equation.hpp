@@ -385,6 +385,11 @@ class equation_fixed_prec
       : base_t{points} {}
 
   ~equation_fixed_prec() = default;
+
+  [[nodiscard]] std::unique_ptr<newton_equation_base> copy()
+      const noexcept override {
+    return std::make_unique<equation_fixed_prec>(*this);
+  }
 };
 
 }  // namespace newton_fractal

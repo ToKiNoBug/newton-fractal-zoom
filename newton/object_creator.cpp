@@ -221,6 +221,14 @@ class object_creator_by_prec
  public:
   using complex_type = fu::complex_type_of<fu::float_by_precision_t<prec>>;
 
+  object_creator_by_prec() = default;
+  object_creator_by_prec(const object_creator_by_prec&) noexcept = default;
+  object_creator_by_prec(object_creator_by_prec&&) noexcept = default;
+
+  [[nodiscard]] std::unique_ptr<object_creator> copy() const noexcept override {
+    return std::make_unique<object_creator_by_prec>(*this);
+  }
+
   [[nodiscard]] int precision() const noexcept override { return prec; }
 
   [[nodiscard]] bool is_fixed_precision() const noexcept override {
@@ -262,9 +270,15 @@ class object_creator_mpc
 
  public:
   explicit object_creator_mpc(int precision) : _precision{precision} {}
+  object_creator_mpc(const object_creator_mpc&) noexcept = default;
+  object_creator_mpc(object_creator_mpc&&) noexcept = default;
 
   using base_t =
       object_creator_default_impl<boostmp::mpc_complex, boostmp::mpfr_float>;
+
+  [[nodiscard]] std::unique_ptr<object_creator> copy() const noexcept override {
+    return std::make_unique<object_creator_mpc>(*this);
+  }
 
   [[nodiscard]] int precision() const noexcept override {
     return this->_precision;

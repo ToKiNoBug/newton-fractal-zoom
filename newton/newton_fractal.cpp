@@ -6,6 +6,16 @@
 
 namespace newton_fractal {
 
+meta_data::meta_data(const meta_data& src) noexcept
+    : rows{src.rows},
+      cols{src.cols},
+      iteration{src.iteration},
+      obj_creator{src.obj_creator->copy()},
+      window{src.window->create_another()},
+      equation{src.equation->copy()} {
+  src.window->copy_to(this->window.get());
+}
+
 tl::expected<meta_data, std::string> load_metadata(
     std::string_view json, bool ignore_compute_objects) noexcept {
   njson nj;

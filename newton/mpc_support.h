@@ -46,6 +46,11 @@ class newton_equation_mpc
   newton_equation_mpc(std::span<const boostmp::mpc_complex> points,
                       int precision);
 
+  [[nodiscard]] std::unique_ptr<newton_equation_base> copy()
+      const noexcept override {
+    return std::make_unique<newton_equation_mpc>(*this);
+  }
+
   [[nodiscard]] int precision() const noexcept;
 
   void set_precision(int p) & noexcept;
