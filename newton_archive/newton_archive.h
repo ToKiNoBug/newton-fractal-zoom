@@ -12,7 +12,13 @@ namespace newton_fractal {
 
 class newton_archive {
  private:
+  meta_data m_info;
+
+  fu::unique_map map_is_number{0, 0, 1};
+
  public:
+  auto &info() noexcept { return this->m_info; }
+  const auto &info() const noexcept { return this->m_info; }
 };
 
 }  // namespace newton_fractal

@@ -1,10 +1,20 @@
 {
-  /*
+  "unused": [
+    {
+      "backend": "mpfr",
+      "precision": 71
+    },
+    {
+      "backend": "boost",
+      "precision": 8
+    },
+    {
+      "backend": "standard",
+      "precision": 2
+    }
+  ],
   "backend": "mpfr",
-  "precision": 71,
-  */
-  "backend": "boost",
-  "precision": 8,
+  "precision": 4932,
   "window": {
     "center": [
       0,

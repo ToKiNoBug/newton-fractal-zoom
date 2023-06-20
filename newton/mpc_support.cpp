@@ -324,13 +324,21 @@ void newton_equation_mpc::iterate_n(complex_type& z, int n,
   }
 }
 
+bool is_limited(mpfr_srcptr a) noexcept {
+  return !(mpfr_nan_p(a) || mpfr_inf_p(a));
+}
+
+bool is_limited(mpc_srcptr z) noexcept {
+  return is_limited(mpc_realref(z)) && is_limited(mpc_imagref(z));
+}
+
 auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
                                          buffer_t& buf) const noexcept
     -> std::optional<single_result> {
   assert(this->_parameters.size() == this->_points.size());
   this->iterate_n(z, iteration_times, buf);
 
-  if (z.real() != z.real() || z.imag() != z.imag()) {
+  if (!is_limited(z.backend().data())) {
     return std::nullopt;
   }
 
@@ -360,10 +368,12 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
 
       // this may be optimized by swapping
       // min_diff = diff;
-      mpc_set(min_diff.backend().data(), diff.backend().data(), MPC_RNDNN);
-      // min_norm2 = diff_norm2;
-      mpfr_set(min_norm2.backend().data(), diff_norm2.backend().data(),
-               MPFR_RNDN);
+      mpc_swap(diff.backend().data(), min_diff.backend().data());
+      // mpc_set(min_diff.backend().data(), diff.backend().data(), MPC_RNDNN);
+      //  min_norm2 = diff_norm2;
+      // mpfr_set(min_norm2.backend().data(),
+      // diff_norm2.backend().data(),MPFR_RNDN);
+      mpfr_swap(min_norm2.backend().data(), diff_norm2.backend().data());
     }
   }
 
@@ -407,7 +417,6 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
 
 #pragma omp parallel for schedule(guided) default(none) \
     shared(rows, cols, r_unit, c_unit, r0, c0, iteration_times, opt)
-
   for (int r = 0; r < (int)rows; r++) {
     thread_local complex_type z{0, 0, (uint32_t)this->_precision};
     thread_local buffer_t buf{this->_precision};
