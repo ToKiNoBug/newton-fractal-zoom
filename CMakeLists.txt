@@ -4,7 +4,8 @@ project(newton_fractal_zoom)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (${MSVC})
-    add_compile_options("/EHsc")
+    set(CMAKE_CXX_FLAGS "/EHsc")
+    #add_compile_options()
 endif ()
 
 
@@ -30,4 +31,5 @@ add_subdirectory(newton)
 add_subdirectory(newton_archive)
 
 enable_language(CUDA)
+add_subdirectory(newton_render)
 add_subdirectory(nftool)
