@@ -10,72 +10,77 @@
 #include <tl/expected.hpp>
 #include <string>
 #include <optional>
-#include <fractal_colors.h>
 #include <span>
+#include <array>
+
+#ifdef __CUDA__
+#define NF_HOST_DEVICE_FUN __host__ __device__
+#else
+#define NF_HOST_DEVICE_FUN
+#endif
 
 namespace newton_fractal {
-namespace internal {
 
-template <typename T>
-class cuda_deleter {
- public:
-  void operator()(T* data) const noexcept;
+struct render_config {
+  enum class mapping_source : uint8_t { magnitude, angle };
+
+  struct render_method {
+    struct color_value_mapping {
+      float range[2];
+      mapping_source src;
+
+      [[nodiscard]] NF_HOST_DEVICE_FUN inline float map(
+          float mag_normalized, float arg_normalized) const noexcept {
+        const float before_mapping = (this->src == mapping_source::magnitude)
+                                         ? (mag_normalized)
+                                         : (arg_normalized);
+        return before_mapping * (this->range[1] - this->range[0]) +
+               this->range[0];
+      }
+    };
+    color_value_mapping hue;
+    color_value_mapping saturation;
+    color_value_mapping value;
+
+    NF_HOST_DEVICE_FUN inline void map_color(float mag_normalized,
+                                             float arg_normalized, float &H,
+                                             float &S,
+                                             float &V) const noexcept {
+      H = this->hue.map(mag_normalized, arg_normalized);
+      S = this->saturation.map(mag_normalized, arg_normalized);
+      V = this->value.map(mag_normalized, arg_normalized);
+    }
+  };
+
+  std::vector<render_method> methods;
+  uint32_t color_for_nan{0xFF000000};
 };
-template <>
-class cuda_deleter<void> {
- public:
-  // implemented in gpu_interface.cu
-  void operator()(void* data) const noexcept;
-};
-template <typename T>
-void cuda_deleter<T>::operator()(T* data) const noexcept {
-  cuda_deleter<void>()(data);
-}
 
-template <typename T>
-using unique_cu_ptr = std::unique_ptr<T, cuda_deleter<T>>;
-
-}  // namespace internal
 class gpu_interface {
- private:
-  internal::unique_cu_ptr<bool> m_has_value{nullptr};
-  internal::unique_cu_ptr<uint8_t> m_nearest_index{nullptr};
-  internal::unique_cu_ptr<std::complex<double>> m_complex_difference{nullptr};
-  internal::unique_cu_ptr<fractal_utils::pixel_RGB> m_pixel{nullptr};
-
-  int m_rows{0};
-  int m_cols{0};
-
-  int m_cuda_error_code{0};
-
  public:
-  gpu_interface() = default;
-  gpu_interface(gpu_interface&&) noexcept = default;
-  gpu_interface(const gpu_interface&) = delete;
-  ~gpu_interface() = default;
+  virtual ~gpu_interface() = default;
 
-  gpu_interface(int _r, int _c);
-
-  [[nodiscard]] inline int rows() const noexcept { return this->m_rows; }
-  [[nodiscard]] inline int cols() const noexcept { return this->m_cols; }
+  [[nodiscard]] virtual int rows() const noexcept = 0;
+  [[nodiscard]] virtual int cols() const noexcept = 0;
   [[nodiscard]] inline int size() const noexcept {
-    return this->m_rows * this->m_cols;
+    return this->rows() * this->cols();
   }
 
-  [[nodiscard]] inline bool ok() const noexcept {
-    return this->m_cuda_error_code == 0;
-  }
-  [[nodiscard]] inline auto error_code() const noexcept {
-    return this->m_cuda_error_code;
-  }
+  [[nodiscard]] virtual bool ok() const noexcept = 0;
 
-  [[nodiscard]] tl::expected<void, std::string> set_has_value(
-      std::span<const bool> src) & noexcept;
-  [[nodiscard]] tl::expected<void, std::string> set_nearest_index(
-      std::span<const uint8_t> src) & noexcept;
-  [[nodiscard]] tl::expected<void, std::string> set_complex_difference(
-      std::span<const std::complex<double>> src) & noexcept;
+  [[nodiscard]] virtual int error_code() const noexcept = 0;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> set_has_value(
+      std::span<const bool> src) & noexcept = 0;
+  [[nodiscard]] virtual tl::expected<void, std::string> set_nearest_index(
+      std::span<const uint8_t> src) & noexcept = 0;
+  [[nodiscard]] virtual tl::expected<void, std::string> set_complex_difference(
+      std::span<const std::complex<double>> src) & noexcept = 0;
+
+  [[nodiscard]] static tl::expected<std::unique_ptr<gpu_interface>, std::string>
+  create(int rows, int cols) noexcept;
 };
+
 }  // namespace newton_fractal
 
 #endif  // NEWTON_FRACTAL_ZOOM_GPU_INTERFACE_H
