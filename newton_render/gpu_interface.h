@@ -12,6 +12,9 @@
 #include <optional>
 #include <span>
 #include <array>
+#include <cassert>
+#include <color_cvt.hpp>
+#include <fractal_colors.h>
 
 #ifdef __CUDA__
 #define NF_HOST_DEVICE_FUN __host__ __device__
@@ -53,7 +56,28 @@ struct render_config {
   };
 
   std::vector<render_method> methods;
-  uint32_t color_for_nan{0xFF000000};
+  fractal_utils::pixel_RGB color_for_nan{0xFF000000};
+};
+
+class render_config_gpu_interface {
+ public:
+  virtual ~render_config_gpu_interface() = default;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> set_config(
+      const render_config &rc) & noexcept = 0;
+  [[nodiscard]] virtual tl::expected<render_config, std::string> config()
+      const noexcept = 0;
+
+  [[nodiscard]] virtual const render_config::render_method *method_ptr()
+      const noexcept = 0;
+  [[nodiscard]] virtual int num_methods() const noexcept = 0;
+
+  [[nodiscard]] virtual bool ok() const noexcept = 0;
+  [[nodiscard]] virtual int error_code() const noexcept = 0;
+
+  [[nodiscard]] static tl::expected<
+      std::unique_ptr<render_config_gpu_interface>, std::string>
+  create() noexcept;
 };
 
 class gpu_interface {
@@ -79,7 +103,51 @@ class gpu_interface {
 
   [[nodiscard]] static tl::expected<std::unique_ptr<gpu_interface>, std::string>
   create(int rows, int cols) noexcept;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> run(
+      const render_config_gpu_interface &config) & noexcept = 0;
 };
+
+NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(
+    const render_config::render_method *method_ptr,
+    fractal_utils::pixel_RGB color_for_nan, bool has_value, int nearest_idx,
+    float mag_normalized, float arg_normalized) noexcept {
+  if (!has_value) {
+    return color_for_nan;
+  }
+
+  float h, s, v;
+  method_ptr[nearest_idx].map_color(mag_normalized, arg_normalized, h, s, v);
+
+  float rgb[3];
+  fractal_utils::hsv_to_rgb(h, s, v, rgb[0], rgb[1], rgb[2]);
+  fractal_utils::pixel_RGB ret{};
+  for (int i = 0; i < 3; i++) {
+    assert(rgb[i] >= 0);
+    assert(rgb[i] <= 1);
+    ret.value[i] = uint8_t(255.0f * rgb[i]);
+  }
+  return ret;
+}
+
+inline fractal_utils::pixel_RGB render(
+    std::span<const render_config::render_method> methods,
+    fractal_utils::pixel_RGB color_for_nan, bool has_value, int nearest_idx,
+    float mag_normalized, float arg_normalized) noexcept {
+  assert(methods.size() > nearest_idx);
+  assert(nearest_idx >= 0);
+  assert(mag_normalized >= 0 && mag_normalized <= 1);
+  assert(arg_normalized >= 0 && arg_normalized <= 1);
+  return render(methods.data(), color_for_nan, has_value, nearest_idx,
+                mag_normalized, arg_normalized);
+}
+
+inline fractal_utils::pixel_RGB render(const render_config &cfg, bool has_value,
+                                       int nearest_idx, float mag_normalized,
+                                       float arg_normalized) noexcept {
+  return render(cfg.methods, cfg.color_for_nan, has_value, nearest_idx,
+                mag_normalized, arg_normalized);
+}
 
 }  // namespace newton_fractal
 
