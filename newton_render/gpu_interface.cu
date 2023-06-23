@@ -6,42 +6,19 @@
 #include <fractal_colors.h>
 #include "gpu_interface.h"
 #include <magic_enum.hpp>
+#include <cuComplex.h>
 // #include <cuda_wrappers/complex>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstring>
 #include <cstdlib>
+#include "gpu_internal.h"
 
 static_assert(cudaError_t::cudaSuccess == 0);
 
 namespace newton_fractal {
 
 constexpr int warp_size = 64;
-
-namespace internal {
-
-template <typename T>
-struct cuda_deleter {
- public:
-  void operator()(T* data) const noexcept;
-};
-template <>
-struct cuda_deleter<void> {
-  void operator()(void* data) const noexcept;
-};
-template <typename T>
-void cuda_deleter<T>::operator()(T* data) const noexcept {
-  cuda_deleter<void>()(data);
-}
-
-template <typename T>
-using unique_cu_ptr = std::unique_ptr<T, cuda_deleter<T>>;
-
-struct pinned_deleter {
-  void operator()(void* ptr) const noexcept { cudaFreeHost(ptr); }
-};
-
-}  // namespace internal
 
 class gpu_implementation : public gpu_interface {
  private:
@@ -102,23 +79,15 @@ class gpu_implementation : public gpu_interface {
   tl::expected<void, std::string> copy_to_device(void* dst, size_t dst_bytes,
                                                  const void* src,
                                                  size_t src_bytes) & noexcept;
+
+ public:
+  [[nodiscard]] tl::expected<void, std::string> run(
+      const render_config_gpu_interface& config) & noexcept override;
 };
 }  // namespace newton_fractal
 
 namespace nf = newton_fractal;
 namespace nfi = newton_fractal::internal;
-
-template <typename T>
-tl::expected<nfi::unique_cu_ptr<T>, cudaError_t> allocate_device_memory(
-    size_t num_elements) noexcept {
-  T* temp{nullptr};
-  auto err = cudaMalloc(&temp, num_elements * sizeof(T));
-  if (err != cudaError_t::cudaSuccess) {
-    return tl::make_unexpected(err);
-  }
-  nfi::unique_cu_ptr<T> ret{temp};
-  return ret;
-}
 
 nf::gpu_implementation::gpu_implementation(int _r, int _c)
     : m_rows{_r}, m_cols{_c} {
@@ -214,4 +183,82 @@ nf::gpu_implementation::set_complex_difference(
   return this->copy_to_device(this->m_complex_difference.get(),
                               this->size() * sizeof(std::complex<double>),
                               src.data(), src.size_bytes());
+}
+
+__global__ void norm_arg_cvt_and_minmax(double2* norm_and_arg,
+                                        double* dest_norm_min,
+                                        double* dest_norm_max,
+                                        double* dest_arg_min,
+                                        double* dest_arg_max) {
+  const uint32_t global_idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+  double2& dst = norm_and_arg[global_idx];
+  {
+    const cuDoubleComplex src = reinterpret_cast<cuDoubleComplex&>(dst);
+    dst.x = std::sqrt(src.x * src.x + src.y * src.y);
+    dst.y = std::atan2(src.y, src.x);
+  }
+
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    double norm_min{INFINITY}, norm_max{-INFINITY};
+    double arg_min{INFINITY}, arg_max{-INFINITY};
+    for (uint32_t offset = 0; offset < blockDim.x; offset++) {
+      const double2 norm_arg = norm_and_arg[global_idx + offset];
+      const double norm = norm_arg.x;
+      const double arg = norm_arg.y;
+
+      norm_min = std::min(norm, norm_min);
+      norm_max = std::max(norm, norm_max);
+
+      arg_min = std::min(arg, arg_min);
+      arg_max = std::max(arg, arg_max);
+    }
+    dest_norm_min[blockIdx.x] = norm_min;
+    dest_norm_max[blockIdx.x] = norm_max;
+
+    dest_arg_min[blockIdx.x] = arg_min;
+    dest_arg_max[blockIdx.x] = arg_max;
+  }
+}
+
+struct normalize_option {
+  double min;
+  double max;
+
+  NF_HOST_DEVICE_FUN inline double normalize(double src) const noexcept {
+    assert(src >= this->min);
+    assert(src <= this->max);
+    assert(this->max != this->min);
+    return (src - this->min) / (this->max - this->min);
+  }
+};
+
+__global__ void run_normalization(double2* norm_and_arg, bool normalize_norm,
+                                  normalize_option norm_option,
+                                  bool normalize_arg,
+                                  normalize_option arg_option) {
+  const uint32_t global_idx = blockDim.x * blockIdx.x + threadIdx.x;
+  double2& dst = norm_and_arg[global_idx];
+
+  if (normalize_norm) {
+    dst.x = norm_option.normalize(dst.x);
+  }
+  if (normalize_arg) {
+    dst.y = arg_option.normalize(dst.y);
+  }
+}
+
+__global__ void run_render_1d(
+    const nf::render_config::render_method* method_ptr,
+    fractal_utils::pixel_RGB color_for_nan, const bool* has_value,
+    const int* nearest_idx, double2* norm_and_arg_normalized) {}
+
+tl::expected<void, std::string> nf::gpu_implementation::run(
+    const render_config_gpu_interface& config) & noexcept {
+  if (!config.ok()) {
+    return tl::make_unexpected("The passed config is not ok.");
+  }
+  return {};
 }
