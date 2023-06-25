@@ -100,7 +100,7 @@ void compute_norm2(const complex_t& a, complex_t& b) noexcept {
 template <typename complex_t>
 using point_list = std::vector<complex_t>;
 
-template <typename complex_t, typename real_t = complex_t::value_type>
+template <typename complex_t, typename real_t = typename complex_t::value_type>
 class newton_equation : public newton_equation_base {
  protected:
   // [a,b,c] <-> z^3 + az^2 + bz + c = 0

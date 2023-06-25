@@ -79,8 +79,9 @@ tl::expected<void, std::string> render_config_gpu_implementation::set_config(
 render_config_gpu_implementation::config() const noexcept {
   if (!this->ok()) {
     return tl::make_unexpected(
-        "The render_config_gpu_interface instance is not ok. cuda error code "
-        "= " +
+        std::string{"The render_config_gpu_interface instance is not ok. cuda "
+                    "error code "
+                    "= "} +
         std::to_string(this->error_code()));
   }
 
@@ -104,7 +105,8 @@ render_config_gpu_interface::create() noexcept {
   auto ret = std::make_unique<render_config_gpu_implementation>();
   if (!ret->ok()) {
     return tl::make_unexpected(
-        "The instance initialization failed with cuda error code " +
+        std::string{
+            "The instance initialization failed with cuda error code "} +
         std::to_string(ret->error_code()));
   }
 

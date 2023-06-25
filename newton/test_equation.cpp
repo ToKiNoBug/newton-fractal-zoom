@@ -18,8 +18,8 @@ using std::cout, std::endl;
 
 template <class eq_t, typename float_disp_t>
 void test_euqation() noexcept {
-  using real_t = eq_t::real_type;
-  using complex_t = eq_t::complex_type;
+  using real_t = typename eq_t::real_type;
+  using complex_t = typename eq_t::complex_type;
   nf::point_list<complex_t> points;
   points.emplace_back(1, 2);
   points.emplace_back(3, 4);

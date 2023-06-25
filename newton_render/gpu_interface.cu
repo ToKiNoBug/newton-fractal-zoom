@@ -305,20 +305,23 @@ tl::expected<void, std::string> nf::gpu_implementation::compute_minmax(
                         this->size() * sizeof(std::complex<double>),
                         cudaMemcpyKind::cudaMemcpyDeviceToHost, this->m_stream);
   if (err != cudaSuccess) {
-    return tl::make_unexpected("cudaMemcpyAsync failed with error code " +
-                               std::to_string(err));
+    return tl::make_unexpected(
+        std::string{"cudaMemcpyAsync failed with error code "} +
+        std::to_string(err));
   }
   err = cudaMemcpyAsync(hostptr_has_value, this->m_has_value.get(),
                         this->size() * sizeof(bool),
                         cudaMemcpyKind::cudaMemcpyDeviceToHost, this->m_stream);
   if (err != cudaSuccess) {
-    return tl::make_unexpected("cudaMemcpyAsync failed with error code " +
-                               std::to_string(err));
+    return tl::make_unexpected(
+        std::string{"cudaMemcpyAsync failed with error code "} +
+        std::to_string(err));
   }
   err = cudaStreamSynchronize(this->m_stream);
   if (err != cudaSuccess) {
-    return tl::make_unexpected("cudaStreamSynchronize failed with error code " +
-                               std::to_string(err));
+    return tl::make_unexpected(
+        std::string{"cudaStreamSynchronize failed with error code "} +
+        std::to_string(err));
   }
 
   mag_min = INFINITY;
@@ -386,7 +389,8 @@ tl::expected<void, std::string> nf::gpu_implementation::run(
                                      arg.min, arg.max);
     if (!temp.has_value()) {
       return tl::make_unexpected(
-          "Failed to compute min and max value. Detail: " + temp.error());
+          std::string{"Failed to compute min and max value. Detail: "} +
+          temp.error());
     }
   }
 
@@ -402,7 +406,7 @@ tl::expected<void, std::string> nf::gpu_implementation::run(
     err = cudaStreamSynchronize(this->m_stream);
     if (err != cudaSuccess) {
       return tl::make_unexpected(
-          "cudaStreamSynchronize failed with error code " +
+          std::string{"cudaStreamSynchronize failed with error code "} +
           std::to_string(err));
     }
   }
@@ -425,14 +429,16 @@ tl::expected<void, std::string> nf::gpu_implementation::get_pixels(
                       this->size() * sizeof(fractal_utils::pixel_RGB),
                       cudaMemcpyKind::cudaMemcpyDeviceToHost, this->m_stream);
   if (err != cudaSuccess) {
-    return tl::make_unexpected("cudaMemcpyAsync failed with error code " +
-                               std::to_string(err));
+    return tl::make_unexpected(
+        std::string{"cudaMemcpyAsync failed with error code "} +
+        std::to_string(err));
   }
 
   err = cudaStreamSynchronize(this->m_stream);
   if (err != cudaSuccess) {
-    return tl::make_unexpected("cudaStreamSynchronize failed with error code " +
-                               std::to_string(err));
+    return tl::make_unexpected(
+        std::string{"cudaStreamSynchronize failed with error code "} +
+        std::to_string(err));
   }
   memcpy(img_u8c3.data(), this->m_pinned_buffer.get(), img_u8c3.bytes());
   return {};

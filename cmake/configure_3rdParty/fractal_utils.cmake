@@ -9,7 +9,7 @@ include(FetchContent)
 message(STATUS "Downloading fractal_utils...")
 FetchContent_Declare(fractal_utils
         GIT_REPOSITORY https://github.com/ToKiNoBug/FractalUtils.git
-        GIT_TAG v2.3.5
+        GIT_TAG v2.3.6
         OVERRIDE_FIND_PACKAGE)
 
 FetchContent_MakeAvailable(fractal_utils)
