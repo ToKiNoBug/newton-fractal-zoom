@@ -61,10 +61,23 @@ class gpu_interface {
 
   [[nodiscard]] virtual tl::expected<void, std::string> set_has_value(
       std::span<const bool> src) & noexcept = 0;
+  [[nodiscard]] tl::expected<void, std::string> set_has_value(
+      fractal_utils::constant_view src) & noexcept {
+    return this->set_has_value({src.address<bool>(0), src.size()});
+  }
   [[nodiscard]] virtual tl::expected<void, std::string> set_nearest_index(
       std::span<const uint8_t> src) & noexcept = 0;
+  [[nodiscard]] tl::expected<void, std::string> set_nearest_index(
+      fractal_utils::constant_view src) & noexcept {
+    return this->set_nearest_index({src.address<uint8_t>(0), src.size()});
+  }
   [[nodiscard]] virtual tl::expected<void, std::string> set_complex_difference(
       std::span<const std::complex<double>> src) & noexcept = 0;
+  [[nodiscard]] tl::expected<void, std::string> set_complex_difference(
+      fractal_utils::constant_view src) & noexcept {
+    return this->set_complex_difference(
+        {src.address<std::complex<double>>(0), src.size()});
+  }
 
   [[nodiscard]] static tl::expected<std::unique_ptr<gpu_interface>, std::string>
   create(int rows, int cols) noexcept;

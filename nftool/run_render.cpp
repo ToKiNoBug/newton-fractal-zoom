@@ -3,12 +3,12 @@
 #include <newton_fractal.h>
 #include <fmt/format.h>
 #include <newton_render.h>
+#include <png_utils.h>
 #include "run_compute.h"
 
 tl::expected<std::pair<nf::render_config,
                        std::unique_ptr<nf::render_config_gpu_interface>>,
              std::string>
-
 create_render_config_objects(const render_task& rt,
                              int archive_points) noexcept {
   nf::render_config render_config;
@@ -77,5 +77,42 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
   auto render_option_objects =
       create_render_config_objects(rt, src->info().num_points());
 
+  std::unique_ptr<nf::gpu_interface> gi{nullptr};
+  {
+    auto temp = nf::gpu_interface::create(src->info().rows, src->info().cols);
+
+    if (!temp.has_value()) {
+      return tl::make_unexpected(fmt::format(
+          "Failed to create gpu_interface, detail: {}", temp.error()));
+    }
+    gi = std::move(temp.value());
+  }
+
+  fu::unique_map image_u8c3{(size_t)src->info().rows, (size_t)src->info().cols,
+                            3};
+
+#define NF_NFTOOL_HANDEL_ERROR(err) \
+  if (!err.has_value()) return tl::make_unexpected(err.error());
+
+  {
+    auto err = gi->set_has_value(src->map_has_result());
+    NF_NFTOOL_HANDEL_ERROR(err);
+    err = gi->set_nearest_index(src->map_nearest_point_idx());
+    NF_NFTOOL_HANDEL_ERROR(err);
+    err = gi->set_complex_difference(src->map_complex_difference());
+    NF_NFTOOL_HANDEL_ERROR(err);
+
+    err = gi->run(*render_option_objects.value().second, 0, 0, false);
+    NF_NFTOOL_HANDEL_ERROR(err);
+
+    err = gi->get_pixels(image_u8c3);
+    NF_NFTOOL_HANDEL_ERROR(err);
+  }
+
+  if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
+                     image_u8c3)) {
+    return tl::make_unexpected(fmt::format(
+        "Function fu::write_png failed to generate \"{}\"", rt.image_filename));
+  }
   return {};
 }

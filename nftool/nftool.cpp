@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
   {
     render->add_option("archive", rt.archive_file);
     render->add_option("-o", rt.image_filename);
+    render->add_option("--rj,--render-json", rt.render_config_filename);
   }
 
   CLI11_PARSE(capp, argc, argv);

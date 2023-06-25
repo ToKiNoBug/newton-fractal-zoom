@@ -28,9 +28,9 @@ if (MPC_FOUND OR LINUX)
     set(NF_mpc_support ON)
 endif ()
 
+enable_language(CUDA)
+
 add_subdirectory(newton)
 add_subdirectory(newton_archive)
-
-enable_language(CUDA)
 add_subdirectory(newton_render)
 add_subdirectory(nftool)
