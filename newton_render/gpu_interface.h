@@ -15,8 +15,9 @@
 #include <cassert>
 #include <color_cvt.hpp>
 #include <fractal_colors.h>
+#include <unique_map.h>
 
-#ifdef __CUDA__
+#ifdef __CUDACC__
 #define NF_HOST_DEVICE_FUN __host__ __device__
 #else
 #define NF_HOST_DEVICE_FUN
@@ -75,6 +76,9 @@ class render_config_gpu_interface {
   [[nodiscard]] virtual bool ok() const noexcept = 0;
   [[nodiscard]] virtual int error_code() const noexcept = 0;
 
+  [[nodiscard]] virtual fractal_utils::pixel_RGB color_for_nan()
+      const noexcept = 0;
+
   [[nodiscard]] static tl::expected<
       std::unique_ptr<render_config_gpu_interface>, std::string>
   create() noexcept;
@@ -105,7 +109,11 @@ class gpu_interface {
   create(int rows, int cols) noexcept;
 
   [[nodiscard]] virtual tl::expected<void, std::string> run(
-      const render_config_gpu_interface &config) & noexcept = 0;
+      const render_config_gpu_interface &config, int skip_rows, int skip_cols,
+      bool sync) & noexcept = 0;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> get_pixels(
+      fractal_utils::map_view image_u8c3) & noexcept = 0;
 };
 
 NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(
@@ -130,7 +138,7 @@ NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(
   return ret;
 }
 
-inline fractal_utils::pixel_RGB render(
+inline fractal_utils::pixel_RGB render_cpu(
     std::span<const render_config::render_method> methods,
     fractal_utils::pixel_RGB color_for_nan, bool has_value, int nearest_idx,
     float mag_normalized, float arg_normalized) noexcept {
@@ -142,11 +150,12 @@ inline fractal_utils::pixel_RGB render(
                 mag_normalized, arg_normalized);
 }
 
-inline fractal_utils::pixel_RGB render(const render_config &cfg, bool has_value,
-                                       int nearest_idx, float mag_normalized,
-                                       float arg_normalized) noexcept {
-  return render(cfg.methods, cfg.color_for_nan, has_value, nearest_idx,
-                mag_normalized, arg_normalized);
+inline fractal_utils::pixel_RGB render_cpu(const render_config &cfg,
+                                           bool has_value, int nearest_idx,
+                                           float mag_normalized,
+                                           float arg_normalized) noexcept {
+  return render_cpu(cfg.methods, cfg.color_for_nan, has_value, nearest_idx,
+                    mag_normalized, arg_normalized);
 }
 
 }  // namespace newton_fractal

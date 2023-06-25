@@ -18,7 +18,7 @@ class render_config_gpu_implementation : public render_config_gpu_interface {
   ~render_config_gpu_implementation() override = default;
 
   [[nodiscard]] int size() const noexcept { return this->m_size; }
-  [[nodiscard]] auto color_for_nan() const noexcept {
+  [[nodiscard]] fractal_utils::pixel_RGB color_for_nan() const noexcept final {
     return this->m_color_for_nan;
   }
 
