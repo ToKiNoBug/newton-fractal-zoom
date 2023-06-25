@@ -1,0 +1,23 @@
+{
+  "color_for_nan": [
+    0,
+    0,
+    0
+  ],
+  "point_methods": [
+    {
+      "hue": {
+        "range": [],
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": [],
+        "source": "magnitude"
+      },
+      "value": {
+        "range": [],
+        "source": "magnitude"
+      }
+    }
+  ]
+}

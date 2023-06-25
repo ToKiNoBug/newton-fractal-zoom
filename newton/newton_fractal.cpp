@@ -7,13 +7,20 @@
 namespace newton_fractal {
 
 meta_data::meta_data(const meta_data& src) noexcept
-    : rows{src.rows},
-      cols{src.cols},
-      iteration{src.iteration},
-      obj_creator{src.obj_creator->copy()},
-      window{src.window->create_another()},
-      equation{src.equation->copy()} {
-  src.window->copy_to(this->window.get());
+    : rows{src.rows}, cols{src.cols}, iteration{src.iteration} {
+  if (src.compute_objs.index() == 1) {
+    this->compute_objs = std::get<1>(src.compute_objs);
+  }
+  if (src.compute_objs.index() == 0) {
+    const auto& src_cobjs = std::get<0>(src.compute_objs);
+    this->compute_objs =
+        compute_objects{.obj_creator = src_cobjs.obj_creator->copy(),
+                        .window{src_cobjs.window->create_another()},
+                        .equation = src_cobjs.equation->copy()};
+    src_cobjs.window->copy_to(this->window());
+  } else {
+    this->compute_objs = std::get<1>(src.compute_objs);
+  }
 }
 
 tl::expected<meta_data, std::string> load_metadata(
@@ -71,9 +78,12 @@ tl::expected<meta_data, std::string> load_metadata(
     }
 
     if (ignore_compute_objects) {
+      ret.compute_objs = meta_data::non_compute_info{
+          .num_points = (int)nj.at("points").size()};
       return ret;
     }
 
+    meta_data::compute_objects cobj;
     {
       auto objc = object_creator::create(backend.value(), precision);
       if (!objc.has_value()) {
@@ -81,26 +91,28 @@ tl::expected<meta_data, std::string> load_metadata(
             "Failed to create object_creator. Detail: {}", objc.error()));
       }
 
-      ret.obj_creator = std::move(objc.value());
+      cobj.obj_creator = std::move(objc.value());
     }
 
     {
-      auto wind_e = ret.obj_creator->create_window(nj.at("window"));
+      auto wind_e = cobj.obj_creator->create_window(nj.at("window"));
       if (!wind_e.has_value()) {
         return tl::make_unexpected(
             fmt::format("Failed to create window. Detail: {}", wind_e.error()));
       }
-      ret.window = std::move(wind_e.value());
+      cobj.window = std::move(wind_e.value());
     }
 
     {
-      auto eq_e = ret.obj_creator->create_equation(nj.at("points"));
+      auto eq_e = cobj.obj_creator->create_equation(nj.at("points"));
       if (!eq_e.has_value()) {
         return tl::make_unexpected(
             fmt::format("Failed to create equation. Detail: {}", eq_e.error()));
       }
-      ret.equation = std::move(eq_e.value());
+      cobj.equation = std::move(eq_e.value());
     }
+
+    ret.compute_objs = std::move(cobj);
 
   } catch (std::exception& e) {
     return tl::make_unexpected(fmt::format(
@@ -111,22 +123,27 @@ tl::expected<meta_data, std::string> load_metadata(
 }
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
-  if (m.obj_creator == nullptr) {
+  if (std::get<0>(m.compute_objs).obj_creator == nullptr) {
     return tl::make_unexpected("The object creator pointer is null.");
   }
-  if (m.equation == nullptr) {
+  if (std::get<0>(m.compute_objs).equation == nullptr) {
     return tl::make_unexpected("The newton equation pointer is null.");
   }
-  if (m.window == nullptr) {
+  if (std::get<0>(m.compute_objs).window == nullptr) {
     return tl::make_unexpected("The window pointer is null.");
   }
 
   njson ret;
-  ret.emplace("backend", magic_enum::enum_name(m.obj_creator->backend_lib()));
-  ret.emplace("precision", m.obj_creator->precision());
+  ret.emplace("backend",
+              magic_enum::enum_name(
+                  std::get<0>(m.compute_objs).obj_creator->backend_lib()));
+  ret.emplace("precision",
+              std::get<0>(m.compute_objs).obj_creator->precision());
 
   {
-    auto wind = m.obj_creator->save_window(*m.window);
+    auto wind =
+        std::get<0>(m.compute_objs)
+            .obj_creator->save_window(*std::get<0>(m.compute_objs).window);
     if (!wind.has_value()) {
       return tl::make_unexpected(
           fmt::format("Failed to save window because {}", wind.error()));
@@ -134,7 +151,9 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
     ret.emplace("window", std::move(wind.value()));
   }
   {
-    auto points = m.obj_creator->save_equation(*m.equation);
+    auto points =
+        std::get<0>(m.compute_objs)
+            .obj_creator->save_equation(*std::get<0>(m.compute_objs).equation);
     ret.emplace("points", std::move(points));
   }
 

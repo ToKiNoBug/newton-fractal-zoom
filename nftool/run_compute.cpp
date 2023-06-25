@@ -51,12 +51,12 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
 
   omp_set_num_threads(ct.threads);
 
-  if (!ar.info().obj_creator->is_fixed_precision()) {
-    if (!ar.info().obj_creator->set_precision(*ar.info().window)) {
+  if (!ar.info().obj_creator()->is_fixed_precision()) {
+    if (!ar.info().obj_creator()->set_precision(*ar.info().window())) {
       return tl::make_unexpected("Failed to update precision for window.");
     }
 
-    if (!ar.info().obj_creator->set_precision(*ar.info().equation)) {
+    if (!ar.info().obj_creator()->set_precision(*ar.info().equation())) {
       return tl::make_unexpected("Failed to update precision for equation.");
     }
   }
@@ -66,7 +66,8 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
   }
 
   double wtime = omp_get_wtime();
-  ar.info().equation->compute(*ar.info().window, ar.info().iteration, option);
+  ar.info().equation()->compute(*ar.info().window(), ar.info().iteration,
+                                option);
   wtime = omp_get_wtime() - wtime;
 
   fmt::print("Computation finished with {} seconds.\n", wtime);

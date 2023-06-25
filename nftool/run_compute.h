@@ -33,6 +33,7 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept;
 struct render_task {
   std::optional<std::string> archive_file{std::nullopt};
   newton_fractal::newton_archive* archive_value{nullptr};
+  std::string render_config_filename;
 
   std::string image_filename;
 };

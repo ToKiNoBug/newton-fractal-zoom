@@ -7,7 +7,8 @@ add_executable(nftool
 
 target_link_libraries(nftool PRIVATE
         newton_fractal
-        newton_archive)
+        newton_archive
+        newton_render)
 
 target_include_directories(nftool PRIVATE
         ${NF_cli11_include_dir}

@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include "run_compute.h"
 #include <newton_archive.h>
+#include <string>
 
 int main(int argc, char** argv) {
   CLI::App capp;
