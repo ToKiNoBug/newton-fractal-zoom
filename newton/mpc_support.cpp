@@ -415,8 +415,7 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   const boostmp::mpfr_float r_unit = -wind.y_span / rows;
   const boostmp::mpfr_float c_unit = wind.x_span / cols;
 
-#pragma omp parallel for schedule(guided) default(none) \
-    shared(rows, cols, r_unit, c_unit, r0, c0, iteration_times, opt)
+#pragma omp parallel for schedule(guided) default(shared)
   for (int r = 0; r < (int)rows; r++) {
     thread_local complex_type z{0, 0, (uint32_t)this->_precision};
     thread_local buffer_t buf{this->_precision};

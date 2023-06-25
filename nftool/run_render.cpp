@@ -1,8 +1,9 @@
-#include "run_compute.h"
+
 #include <newton_archive.h>
 #include <newton_fractal.h>
 #include <fmt/format.h>
 #include <newton_render.h>
+#include "run_compute.h"
 
 tl::expected<std::pair<nf::render_config,
                        std::unique_ptr<nf::render_config_gpu_interface>>,
@@ -61,7 +62,7 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
 
     if (!temp.has_value()) {
       return tl::make_unexpected(fmt::format("Failed to load {}, detail: {}",
-                                             rt.archive_file.value(),
+                                             rt.archive_file.value().c_str(),
                                              temp.error()));
     }
     archive = std::move(temp.value());

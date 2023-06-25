@@ -13,10 +13,12 @@ meta_data::meta_data(const meta_data& src) noexcept
   }
   if (src.compute_objs.index() == 0) {
     const auto& src_cobjs = std::get<0>(src.compute_objs);
-    this->compute_objs =
-        compute_objects{.obj_creator = src_cobjs.obj_creator->copy(),
-                        .window{src_cobjs.window->create_another()},
-                        .equation = src_cobjs.equation->copy()};
+    this->compute_objs = compute_objects{};
+    auto& cobj = std::get<0>(this->compute_objs);
+    cobj.obj_creator = src_cobjs.obj_creator->copy();
+    cobj.window.reset(src_cobjs.window->create_another());
+    cobj.equation = src_cobjs.equation->copy();
+
     src_cobjs.window->copy_to(this->window());
   } else {
     this->compute_objs = std::get<1>(src.compute_objs);

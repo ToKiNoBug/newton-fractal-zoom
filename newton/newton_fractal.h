@@ -26,9 +26,6 @@
 #include <boost/multiprecision/mpc.hpp>
 #endif
 
-namespace fu = fractal_utils;
-namespace nf = newton_fractal;
-
 namespace newton_fractal {
 
 struct meta_data {
@@ -39,7 +36,7 @@ struct meta_data {
   struct compute_objects {
     std::unique_ptr<object_creator> obj_creator{nullptr};
     std::unique_ptr<fractal_utils::wind_base> window{nullptr};
-    std::unique_ptr<newton_equation_base> equation{nullptr};
+    std::unique_ptr<::nf::newton_equation_base> equation{nullptr};
   };
   struct non_compute_info {
     int num_points{0};
@@ -95,5 +92,8 @@ tl::expected<meta_data, std::string> load_metadata(
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept;
 
 };  // namespace newton_fractal
+
+namespace fu = fractal_utils;
+namespace nf = newton_fractal;
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_FRACTAL_H
