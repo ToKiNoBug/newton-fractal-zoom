@@ -140,9 +140,8 @@ class newton_equation : public newton_equation_base {
   }
 
   [[nodiscard]] std::complex<double> point_at(int idx) const noexcept override {
-    std::complex<double> ret;
-    ret = std::complex<double>{this->_points[idx]};
-    return ret;
+    return {(double)this->_points[idx].real(),
+            (double)this->_points[idx].imag()};
   }
 
   void add_point(const complex_t& p) noexcept {
@@ -317,7 +316,7 @@ class newton_equation : public newton_equation_base {
 
     const real_t r_unit = -wind.y_span / rows;
     const real_t c_unit = wind.x_span / cols;
-    
+
 #pragma omp parallel for schedule(guided) default(none) \
     shared(rows, cols, r_unit, c_unit, r0c0, iteration_times, opt)
     for (int r = 0; r < (int)rows; r++) {
