@@ -78,7 +78,7 @@ tl::expected<complex_t, std::string> decode_complex(
                     "2 elements."));
   }
   auto temp_real = internal::decode<real_t>(cur_p[0]);
-  auto temp_imag = internal::decode<real_t>(cur_p[0]);
+  auto temp_imag = internal::decode<real_t>(cur_p[1]);
 
   if (!temp_real.has_value()) {
     tl::make_unexpected(fmt::format("Failed to decode real part."));

@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
   auto render = capp.add_subcommand("render");
   render_task rt;
   {
-    render->add_option("archive", rt.archive_file);
+    render->add_option("archive", rt.archive_file, "The archive to render")
+        ->check(CLI::ExistingFile);
     render->add_option("-o", rt.image_filename);
     render->add_option("--rj,--render-json", rt.render_config_filename);
   }

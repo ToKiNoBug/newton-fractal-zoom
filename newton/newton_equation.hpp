@@ -93,9 +93,10 @@ inline void format_complex(const std::complex<__float128>& z,
 }
 #endif
 
-template <typename complex_t>
-void compute_norm2(const complex_t& a, complex_t& b) noexcept {
-  b = a * (-a);
+template <typename complex_t, typename real_t>
+void compute_norm2(const complex_t& a, real_t& b) noexcept {
+  // complex_t temp = a * (-a);
+  b = a.real() * a.real() + a.imag() * a.imag();
 }
 template <typename complex_t>
 using point_list = std::vector<complex_t>;
@@ -136,6 +137,12 @@ class newton_equation : public newton_equation_base {
   const auto& item_at_order(int _order) const noexcept {
     assert(_order < this->order());
     return this->parameters()[this->order() - _order - 1];
+  }
+
+  [[nodiscard]] std::complex<double> point_at(int idx) const noexcept override {
+    std::complex<double> ret;
+    ret = std::complex<double>{this->_points[idx]};
+    return ret;
   }
 
   void add_point(const complex_t& p) noexcept {
@@ -266,13 +273,13 @@ class newton_equation : public newton_equation_base {
 
     int min_idx = -1;
     complex_t min_diff;
-    complex_t min_norm2{FP_INFINITE};
+    real_t min_norm2{INFINITY};
     for (int idx = 0; idx < this->order(); idx++) {
       complex_t diff = z - this->_points[idx];
-      complex_t diff_norm2;
+      real_t diff_norm2;
       compute_norm2(diff, diff_norm2);
 
-      if (diff_norm2.real() < min_norm2.real()) {
+      if (diff_norm2 < min_norm2) {
         min_idx = idx;
         min_diff = diff;
         min_norm2 = diff_norm2;
@@ -310,22 +317,24 @@ class newton_equation : public newton_equation_base {
 
     const real_t r_unit = -wind.y_span / rows;
     const real_t c_unit = wind.x_span / cols;
-
+    
 #pragma omp parallel for schedule(guided) default(none) \
     shared(rows, cols, r_unit, c_unit, r0c0, iteration_times, opt)
     for (int r = 0; r < (int)rows; r++) {
       complex_t z;
       {
         real_t temp = r * r_unit;
-        temp = r0c0.imag();
+        temp += r0c0.imag();
         z.imag(temp);
       }
+      const real_t imag_part = z.imag();
       for (int c = 0; c < (int)cols; c++) {
         {
           real_t temp = c * c_unit;
           temp += r0c0.real();
           z.real(temp);
         }
+        z.imag(imag_part);
 
         auto result = this->compute_single(z, iteration_times);
         opt.bool_has_result.at<bool>(r, c) = result.has_value();

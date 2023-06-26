@@ -74,7 +74,7 @@ tl::expected<meta_data, std::string> load_metadata(
       return tl::make_unexpected(fmt::format(
           "Invalid value for rows({}) and cols({}).", ret.rows, ret.cols));
     }
-    if (ret.iteration <= 1) {
+    if (ret.iteration < 0) {
       return tl::make_unexpected(fmt::format(
           "The value for iteration({}) is too small.", ret.iteration));
     }

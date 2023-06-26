@@ -28,6 +28,9 @@ class newton_equation_base {
 
   [[nodiscard]] virtual std::string to_string() const noexcept = 0;
 
+  [[nodiscard]] virtual std::complex<double> point_at(
+      int idx) const noexcept = 0;
+
   /*
   virtual void iterate_n(std::any &z, int iteration_times) const noexcept = 0;
   */
