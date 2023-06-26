@@ -12,13 +12,19 @@ tl::expected<render_config::render_method::color_value_mapping, std::string>
 parse_color_value_mapping(const njson &nj) noexcept {
   render_config::render_method::color_value_mapping cvm{};
   try {
-    const auto &range_arr = nj.at("range");
-    if (range_arr.size() != 2) {
-      return tl::make_unexpected(fmt::format(
-          "range should be of size 2, but actually {}", range_arr.size()));
+    const auto &range = nj.at("range");
+
+    if (range.is_array()) {
+      if (range.size() != 2) {
+        return tl::make_unexpected(fmt::format(
+            "range should be of size 2, but actually {}", range.size()));
+      }
+      cvm.range[0] = range[0];
+      cvm.range[1] = range[1];
+    } else {
+      cvm.range[0] = range;
+      cvm.range[1] = range;
     }
-    cvm.range[0] = range_arr[0];
-    cvm.range[1] = range_arr[1];
 
     std::string src_str = nj.at("source");
     auto source_opt =

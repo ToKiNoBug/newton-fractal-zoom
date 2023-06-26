@@ -87,8 +87,7 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
         "No value assigned to -o, the computation result will not be saved.\n");
     return {};
   }
-
-  {
+  if (!ct.archive_filename.empty()) {
     auto exp = ar.save(ct.archive_filename);
     if (!exp.has_value()) {
       fmt::print("Failed to save computation result. Detail: {}", exp.error());

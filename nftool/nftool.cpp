@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     compute->add_option("meta-info-file", ct.filename, "Task to compute")
         ->check(CLI::ExistingFile)
         ->required();
-    compute->add_option("-o", ct.archive_filename)->required();
+    compute->add_option("-o", ct.archive_filename);
     compute->add_option("--rows", ct.row_override);
     compute->add_option("-j,--threads", ct.threads);
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
   if (compute->count() > 0) {
     if (render->count() > 0) {
       ct.return_archive = &archive;
+      rt.archive_value = &archive;
     }
     auto result = run_compute(ct);
     if (!result.has_value()) {

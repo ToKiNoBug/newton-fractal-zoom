@@ -300,7 +300,8 @@ tl::expected<void, std::string> nf::gpu_implementation::compute_minmax(
   uint8_t* const hostptr_has_value =
       hostptr_norm_arg + this->size() * sizeof(std::complex<double>);
   assert(hostptr_has_value + this->size() * sizeof(bool) <=
-         this->m_pinned_buffer.get());
+         (uint8_t*)this->m_pinned_buffer.get() +
+             this->required_pinned_memory());
   err = cudaMemcpyAsync(hostptr_norm_arg, this->m_complex_difference.get(),
                         this->size() * sizeof(std::complex<double>),
                         cudaMemcpyKind::cudaMemcpyDeviceToHost, this->m_stream);

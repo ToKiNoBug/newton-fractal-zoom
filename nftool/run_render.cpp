@@ -76,6 +76,11 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
 
   auto render_option_objects =
       create_render_config_objects(rt, src->info().num_points());
+  if (!render_option_objects.has_value()) {
+    return tl::make_unexpected(
+        fmt::format("Failed to make render config objects, detail: {}",
+                    render_option_objects.error()));
+  }
 
   std::unique_ptr<nf::gpu_interface> gi{nullptr};
   {

@@ -58,7 +58,7 @@ render_config_gpu_implementation::render_config_gpu_implementation() {
 
 tl::expected<void, std::string> render_config_gpu_implementation::set_config(
     const render_config &rc) & noexcept {
-  if (rc.methods.empty() || rc.methods.size() <= gpu_memory_capacity) {
+  if (rc.methods.empty() || rc.methods.size() >= gpu_memory_capacity) {
     return tl::make_unexpected("Invalid number of render_methods.");
   }
 
