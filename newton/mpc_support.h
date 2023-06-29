@@ -35,8 +35,8 @@ class newton_equation_mpc
       }
     }
   };
-  static buffer_t& buffer() noexcept;
 
+  static buffer_t& buffer() noexcept;
   void update_precision() & noexcept;
 
  public:
@@ -45,6 +45,10 @@ class newton_equation_mpc
   explicit newton_equation_mpc(std::span<const boostmp::mpc_complex> points);
   newton_equation_mpc(std::span<const boostmp::mpc_complex> points,
                       int precision);
+
+  [[nodiscard]] static consteval bool is_fixed_precision() noexcept {
+    return false;
+  }
 
   [[nodiscard]] std::unique_ptr<newton_equation_base> copy()
       const noexcept override {

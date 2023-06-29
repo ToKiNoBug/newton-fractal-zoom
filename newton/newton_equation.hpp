@@ -439,6 +439,10 @@ class equation_fixed_prec
       const noexcept override {
     return std::make_unique<equation_fixed_prec>(*this);
   }
+
+  [[nodiscard]] static consteval bool is_fixed_precision() noexcept {
+    return true;
+  }
 };
 
 }  // namespace newton_fractal

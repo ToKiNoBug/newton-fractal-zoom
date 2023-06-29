@@ -155,6 +155,7 @@ int newton_equation_mpc::precision() const noexcept { return this->_precision; }
 void newton_equation_mpc::set_precision(int p) & noexcept {
   assert(p > 0);
   this->_precision = p;
+  this->update_precision();
   // this->buffer.set_precision(p);
 }
 
@@ -165,6 +166,7 @@ void newton_equation_mpc::update_precision() & noexcept {
   for (auto& val : this->_points) {
     val.precision(this->_precision);
   }
+  buffer().set_precision(this->_precision);
 }
 
 void newton_equation_mpc::add_point(const boostmp::mpc_complex& p) & noexcept {
@@ -232,6 +234,7 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
   auto& z_power = buf.complex_arr[2];
   auto& temp = buf.complex_arr[3];
   auto& extra_buf = buf.complex_arr[4];
+
   assert(f.precision() == df.precision());
   assert(df.precision() == z_power.precision());
   assert(temp.precision() == z.precision());
@@ -252,39 +255,37 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
 
   // temp.precision(this->_precision);
   for (int n = 1; n < this->order(); n++) {
-    {
-      // temp = this->item_at_order(n) * z_power;
-      /*mpc_mul(temp.backend().data(), z_power.backend().data(),
-              this->item_at_order(n).backend().data(), MPC_RNDNN);*/
+    // temp = this->item_at_order(n) * z_power;
+    /*mpc_mul(temp.backend().data(), z_power.backend().data(),
+            this->item_at_order(n).backend().data(), MPC_RNDNN);*/
 
+    mpc_mul_buffered(temp.backend().data(), z_power.backend().data(),
+                     this->item_at_order(n).backend().data(), MPC_RNDNN,
+                     extra_buf.backend().data());
+
+    // f += temp;
+    mpc_add(f.backend().data(), f.backend().data(), temp.backend().data(),
+            MPC_RNDNN);
+
+    if (n + 1 >= this->order()) {
+      // temp = z_power;
+      mpc_set(temp.backend().data(), z_power.backend().data(), MPC_RNDNN);
+      // temp *= (n + 1);
+      mpc_mul_ui(temp.backend().data(), temp.backend().data(), n + 1,
+                 MPC_RNDNN);
+    } else {
+      // temp = this->item_at_order(n + 1) * z_power;
       mpc_mul_buffered(temp.backend().data(), z_power.backend().data(),
-                       this->item_at_order(n).backend().data(), MPC_RNDNN,
+                       this->item_at_order(n + 1).backend().data(), MPC_RNDNN,
                        extra_buf.backend().data());
+      // temp *= (n + 1);
+      mpc_mul_ui(temp.backend().data(), temp.backend().data(), n + 1,
+                 MPC_RNDNN);
+    }
+    // df += temp;
+    mpc_add(df.backend().data(), df.backend().data(), temp.backend().data(),
+            MPC_RNDNN);
 
-      // f += temp;
-      mpc_add(f.backend().data(), f.backend().data(), temp.backend().data(),
-              MPC_RNDNN);
-    }
-    {
-      if (n + 1 >= this->order()) {
-        // temp = z_power;
-        mpc_set(temp.backend().data(), z_power.backend().data(), MPC_RNDNN);
-        // temp *= (n + 1);
-        mpc_mul_ui(temp.backend().data(), temp.backend().data(), n + 1,
-                   MPC_RNDNN);
-      } else {
-        // temp = this->item_at_order(n + 1) * z_power;
-        mpc_mul_buffered(temp.backend().data(), z_power.backend().data(),
-                         this->item_at_order(n + 1).backend().data(), MPC_RNDNN,
-                         extra_buf.backend().data());
-        // temp *= (n + 1);
-        mpc_mul_ui(temp.backend().data(), temp.backend().data(), n + 1,
-                   MPC_RNDNN);
-      }
-      // df += temp;
-      mpc_add(df.backend().data(), df.backend().data(), temp.backend().data(),
-              MPC_RNDNN);
-    }
     // z_power *= z;
     mpc_mul_inplace_buffered(z_power.backend().data(), z.backend().data(),
                              MPC_RNDNN, extra_buf.backend().data());
@@ -295,11 +296,11 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
           MPC_RNDNN);
 
   // f /= df;
-  /*mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
-          MPC_RNDNN);*/
-
-  mpc_div_inplace_buffered(f.backend().data(), df.backend().data(), MPC_RNDNN,
-                           extra_buf.backend().data());
+  mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
+          MPC_RNDNN);
+#warning mpc_div_inplace_buffered is incorrect in the real part. Fix it and comment the previous line later
+  /*mpc_div_inplace_buffered(f.backend().data(), df.backend().data(), MPC_RNDNN,
+                           extra_buf.backend().data());*/
 
   // z -= f;
   mpc_sub(z.backend().data(), z.backend().data(), f.backend().data(),
@@ -308,7 +309,7 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
 
 newton_equation_mpc::complex_type newton_equation_mpc::iterate(
     const complex_type& z) const noexcept {
-  complex_type temp{z};
+  complex_type temp{z, this->_precision};
   this->iterate_inplace(temp, buffer());
   return temp;
 }
@@ -363,16 +364,12 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
     // compute_norm2(diff, diff_norm2);
     mpc_norm(diff_norm2.backend().data(), diff.backend().data(), MPFR_RNDN);
 
-    if (diff_norm2.real() < min_norm2.real()) {
+    if (diff_norm2 < min_norm2) {
       min_idx = idx;
 
-      // this may be optimized by swapping
       // min_diff = diff;
       mpc_swap(diff.backend().data(), min_diff.backend().data());
-      // mpc_set(min_diff.backend().data(), diff.backend().data(), MPC_RNDNN);
       //  min_norm2 = diff_norm2;
-      // mpfr_set(min_norm2.backend().data(),
-      // diff_norm2.backend().data(),MPFR_RNDN);
       mpfr_swap(min_norm2.backend().data(), diff_norm2.backend().data());
     }
   }
@@ -409,8 +406,12 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
           _wind);
 
   const auto left_top_corner = wind.left_top_corner();
-  const real_type r0{left_top_corner[0], (uint32_t)this->_precision};
-  const real_type c0{left_top_corner[1], (uint32_t)this->_precision};
+
+  const double ltc_0 = left_top_corner[0].convert_to<double>();
+  const double ltc_1 = left_top_corner[1].convert_to<double>();
+
+  const real_type r0{left_top_corner[1], (uint32_t)this->_precision};
+  const real_type c0{left_top_corner[0], (uint32_t)this->_precision};
   /*const complex_type r0c0{left_top_corner[0], left_top_corner[1],
                           (uint32_t)this->_precision};
   */
@@ -418,10 +419,10 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   const boostmp::mpfr_float r_unit = -wind.y_span / rows;
   const boostmp::mpfr_float c_unit = wind.x_span / cols;
 
-  auto compute_part_function = [this](mpfr_srcptr unit, int idx,
-                                      mpfr_srcptr offset, mpfr_ptr dest) {
+  auto compute_part_function = [](mpfr_srcptr unit, int idx, mpfr_srcptr offset,
+                                  mpfr_ptr dest) {
     mpfr_mul_ui(dest, unit, idx, MPFR_RNDN);
-    mpfr_add(dest, dest, unit, MPFR_RNDN);
+    mpfr_add(dest, dest, offset, MPFR_RNDN);
   };
 
 #pragma omp parallel for schedule(guided) default(shared)
@@ -439,6 +440,8 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                MPFR_RNDN);
       compute_part_function(c_unit.backend().data(), c, c0.backend().data(),
                             mpc_realref(z.backend().data()));
+
+      // auto z_stdc = z.convert_to<std::complex<double>>();
 
       auto result = this->compute_single(z, iteration_times, buf);
       opt.bool_has_result.at<bool>(r, c) = result.has_value();

@@ -23,12 +23,11 @@ void test_euqation() noexcept {
   nf::point_list<complex_t> points;
   points.emplace_back(1, 2);
   points.emplace_back(3, 4);
-  points.emplace_back(5, 6); /*
-   points.emplace_back(7, 8);
-   points.emplace_back(9, 10);
-   points.emplace_back(11, 12);
-   points.emplace_back(1, 2);
-   */
+  points.emplace_back(5, 6);
+  //  points.emplace_back(7, 8);
+  //  points.emplace_back(9, 10);
+  //  points.emplace_back(11, 12);
+  //  points.emplace_back(1, 2);
 
   eq_t ne{points};
 
@@ -45,6 +44,10 @@ void test_euqation() noexcept {
   }
 
   complex_t z = 10000;
+  if constexpr (!ne.is_fixed_precision()) {
+    ne.set_precision(100);
+    z.precision(ne.precision());
+  }
   for (int i = 0; i < 30; i++) {
     complex_t z_1 = ne.iterate(z);
 
@@ -56,9 +59,9 @@ void test_euqation() noexcept {
 }
 
 int main(int argc, char** argv) {
+  test_euqation<nf::equation_fixed_prec<2>, double>();
   if (false) {
     test_euqation<nf::equation_fixed_prec<1>, float>();
-    test_euqation<nf::equation_fixed_prec<2>, double>();
     test_euqation<nf::equation_fixed_prec<4>, double>();
     test_euqation<nf::equation_fixed_prec<8>, double>();
     test_euqation<nf::equation_fixed_prec<16>, double>();
