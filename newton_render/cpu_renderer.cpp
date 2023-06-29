@@ -67,7 +67,7 @@ void cpu_renderer::render(const newton_fractal::render_config &config,
 
       image_u8c3.at<fractal_utils::pixel_RGB>(r, c) =
           render_cpu(config, map_has_value.at<bool>(r, c),
-                     map_nearest_idx.at<uint8_t>(r, c), arg_opt.normalize(mag),
+                     map_nearest_idx.at<uint8_t>(r, c), mag_opt.normalize(mag),
                      arg_opt.normalize(arg));
     }
   }

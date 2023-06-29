@@ -349,7 +349,7 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
 
   // complex_type min_norm2{FP_INFINITE};
   auto& min_norm2 = buf.real_arr[0];
-  mpfr_set_d(min_norm2.backend().data(), NAN, MPFR_RNDN);
+  mpfr_set_d(min_norm2.backend().data(), INFINITY, MPFR_RNDN);
 
   auto& diff = buf.complex_arr[1];
   auto& diff_norm2 = buf.real_arr[1];
@@ -376,6 +376,9 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
       mpfr_swap(min_norm2.backend().data(), diff_norm2.backend().data());
     }
   }
+
+  assert(min_idx >= 0);
+  assert(min_idx < this->_points.size());
 
   return single_result{min_idx, std::complex<double>{double(min_diff.real()),
                                                      double(min_diff.imag())}};
