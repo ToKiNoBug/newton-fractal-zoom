@@ -8,6 +8,7 @@
 #include <memory>
 #include "render_config.h"
 #include "gpu_interface.h"
+#include "cpu_renderer.h"
 #include <nlohmann/json.hpp>
 
 using njson = nlohmann::json;

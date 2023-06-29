@@ -36,6 +36,7 @@ struct render_task {
   std::string render_config_filename;
 
   std::string image_filename;
+  bool use_cpu{false};
 };
 tl::expected<void, std::string> run_render(const render_task& rt) noexcept;
 

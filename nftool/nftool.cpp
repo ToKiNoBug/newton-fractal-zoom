@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
         ->check(CLI::ExistingFile);
     render->add_option("-o", rt.image_filename);
     render->add_option("--rj,--render-json", rt.render_config_filename);
+    render->add_flag("--cpu", rt.use_cpu)->default_val(false);
   }
 
   auto look = capp.add_subcommand("look");
