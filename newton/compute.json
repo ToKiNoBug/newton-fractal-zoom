@@ -21,8 +21,8 @@
       "precision": 2
     }
   ],
-  "backend": "standard",
-  "precision": 2,
+  "backend": "mpfr",
+  "precision": 50,
   "window": {
     "center": [
       0,
@@ -45,7 +45,7 @@
       0
     ]
   ],
-  "rows": 1080,
-  "cols": 1920,
+  "rows": 108,
+  "cols": 192,
   "iteration": 100
 }
