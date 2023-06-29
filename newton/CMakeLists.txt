@@ -38,6 +38,10 @@ target_include_directories(newton_fractal PUBLIC
         ${NF_cli11_include_dir}
         ${NF_njson_include_dir})
 
+if (${LINUX} OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"))
+    target_link_libraries(newton_fractal PUBLIC quadmath)
+endif ()
+
 if (${NF_mpc_support})
     target_sources(newton_fractal PRIVATE mpc_support.cpp)
     target_compile_definitions(newton_fractal PUBLIC NEWTON_FRACTAL_MPC_SUPPORT=1)

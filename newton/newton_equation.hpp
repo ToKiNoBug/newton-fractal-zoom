@@ -22,6 +22,10 @@
 #include "newton_equation_base.h"
 #include <sstream>
 
+#ifdef __GNUC__
+#include <quadmath.h>
+#endif
+
 namespace fu = fractal_utils;
 /*
 #ifdef __GNUC__
@@ -61,13 +65,34 @@ std::optional<real_t> decode(const njson& nj) noexcept {
     return real_t(double(nj));
   }
   if (nj.is_string()) {
-    std::string hex = nj;
-    std::vector<uint8_t> bin;
-    bin.resize(hex.size());
-    auto len = fractal_utils::hex_2_bin(hex, bin);
-    if (!len.has_value()) return std::nullopt;
-    bin.resize(len.value());
-    return fractal_utils::decode_float<real_t>(bin);
+    const std::string str = nj;
+    if (str.starts_with("0x") || str.starts_with("0X")) {
+      // parse as hex
+      std::vector<uint8_t> bin;
+      bin.resize(str.size());
+      auto len = fractal_utils::hex_2_bin(str, bin);
+      if (!len.has_value()) return std::nullopt;
+      bin.resize(len.value());
+      return fractal_utils::decode_float<real_t>(bin);
+    } else {
+#ifdef __GNUC__
+      constexpr bool is_quadmath = std::is_same_v<real_t, __float128>;
+#else
+      constexpr bool is_quadmath = false;
+#endif
+
+      if constexpr (is_quadmath) {
+        char* p_end = nullptr;
+        __float128 ret = strtoflt128(str.c_str(), &p_end);
+        return ret;
+      } else {
+        thread_local std::stringstream ss;
+        ss << str;
+        real_t out;
+        ss >> out;
+        return out;
+      }
+    }
   }
   return std::nullopt;
 }
