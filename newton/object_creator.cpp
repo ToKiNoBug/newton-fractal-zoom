@@ -110,7 +110,8 @@ class object_creator_default_impl : public object_creator {
     fractal_utils::center_wind<real_type> ret;
     try {
       for (size_t idx = 0; idx < 2; idx++) {
-        auto temp = internal::decode<real_t>(nj.at("center").at(idx));
+        // std::string str = .at(idx);
+        auto temp = internal::decode<real_t>(nj.at("center")[idx]);
         if (!temp.has_value()) {
           return tl::make_unexpected(fmt::format(
               "Failed to decode center component at index {}", idx));
@@ -172,7 +173,7 @@ class object_creator_default_impl : public object_creator {
     ret.emplace("x_span", hex);
 
     internal::encode_float_to_hex(wind.y_span, bin, hex);
-    ret.emplace("x_span", hex);
+    ret.emplace("y_span", hex);
 
     return ret;
   }

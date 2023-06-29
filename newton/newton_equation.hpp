@@ -60,11 +60,12 @@ std::optional<real_t> decode(const njson& nj) noexcept {
   if (nj.is_number()) {
     return real_t(double(nj));
   }
-  if (!nj.is_string()) {
+  if (nj.is_string()) {
     std::string hex = nj;
     std::vector<uint8_t> bin;
     bin.resize(hex.size());
     auto len = fractal_utils::hex_2_bin(hex, bin);
+    if (!len.has_value()) return std::nullopt;
     bin.resize(len.value());
     return fractal_utils::decode_float<real_t>(bin);
   }
