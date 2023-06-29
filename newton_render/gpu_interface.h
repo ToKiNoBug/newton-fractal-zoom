@@ -143,6 +143,22 @@ inline fractal_utils::pixel_RGB render_cpu(const render_config &cfg,
                     mag_normalized, arg_normalized);
 }
 
+struct normalize_option {
+  double min;
+  double max;
+
+  NF_HOST_DEVICE_FUN inline double normalize(double src) const noexcept {
+    assert(src >= this->min);
+    assert(src <= this->max);
+    assert(this->max != this->min);
+    return (src - this->min) / (this->max - this->min);
+  }
+
+  NF_HOST_DEVICE_FUN inline void add_data(double d) & noexcept {
+    this->min = std::min(this->min, d);
+    this->max = std::max(this->max, d);
+  }
+};
 }  // namespace newton_fractal
 
 #endif  // NEWTON_FRACTAL_ZOOM_GPU_INTERFACE_H

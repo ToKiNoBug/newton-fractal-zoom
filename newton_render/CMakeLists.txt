@@ -8,9 +8,12 @@ add_library(newton_render STATIC
         newton_render.h
         newton_render.cpp
 
-        NF_cuda_macros.hpp
         render_config.h
         render_config.cpp
+        cpu_renderer.cpp
+        cpu_renderer.h
+
+        NF_cuda_macros.hpp
         render_config_gpu_interface.cu
 
         gpu_interface.h

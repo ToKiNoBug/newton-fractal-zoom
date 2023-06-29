@@ -248,24 +248,13 @@ __global__ void norm_arg_cvt(double2* norm_and_arg, int rows, int cols) {
   }
 }
 
-struct normalize_option {
-  double min;
-  double max;
-
-  __host__ __device__ inline double normalize(double src) const noexcept {
-    assert(src >= this->min);
-    assert(src <= this->max);
-    assert(this->max != this->min);
-    return (src - this->min) / (this->max - this->min);
-  }
-};
-
 __global__ void run_render_1d(
     const nf::render_config::render_method* method_ptr,
     fractal_utils::pixel_RGB color_for_nan, const bool* has_value,
     const uint8_t* nearest_idx, const double2* norm_and_arg,
     fractal_utils::pixel_RGB* dst_u8c3, coordinate_t size, coordinate_t skip,
-    normalize_option norm_option, normalize_option arg_option) {
+    newton_fractal::normalize_option norm_option,
+    newton_fractal::normalize_option arg_option) {
   const uint32_t global_thread_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (global_thread_idx >=
       (size.row - 2 * skip.row) * (size.col - 2 * skip.col)) {
