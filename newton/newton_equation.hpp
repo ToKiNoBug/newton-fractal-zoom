@@ -262,11 +262,26 @@ class newton_equation : public newton_equation_base {
     this->iterate_n(*std::any_cast<complex_t>(&z), n);
   }
 
+  [[nodiscard]] static inline bool is_normal(const real_t& n) noexcept {
+    if (n != n) {  // nan
+      return false;
+    }
+    //    const real_t temp = n * 0;
+    //    if (temp != temp) {  // inf*0==nan
+    //      return false;
+    //    }
+    return true;
+  }
+
+  [[nodiscard]] static inline bool is_normal(const complex_t& z) noexcept {
+    return is_normal(real_t{z.real()}) && is_normal(real_t{z.imag()});
+  }
+
   std::optional<single_result> compute_single(
       complex_t& z, int iteration_times) const noexcept {
     assert(this->_parameters.size() == this->_points.size());
     this->iterate_n(z, iteration_times);
-    if (z.real() != z.real() || z.imag() != z.imag()) {
+    if (!is_normal(z)) {
       return std::nullopt;
     }
 

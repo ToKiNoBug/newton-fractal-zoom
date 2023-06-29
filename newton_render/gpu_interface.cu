@@ -100,6 +100,8 @@ class gpu_implementation : public gpu_interface {
 
   [[nodiscard]] tl::expected<void, std::string> get_pixels(
       fractal_utils::map_view dest) & noexcept final;
+
+  void wait_for_finished() & noexcept(false) final;
 };
 }  // namespace newton_fractal
 
@@ -445,4 +447,13 @@ tl::expected<void, std::string> nf::gpu_implementation::get_pixels(
   }
   memcpy(img_u8c3.data(), this->m_pinned_buffer.get(), img_u8c3.bytes());
   return {};
+}
+
+void nf::gpu_implementation::wait_for_finished() & noexcept(false) {
+  auto err = cudaStreamSynchronize(this->m_stream);
+  if (err != cudaSuccess) {
+    throw std::runtime_error{
+        "cudaStreamSynchronize failed with cuda error code " +
+        std::to_string(err)};
+  }
 }

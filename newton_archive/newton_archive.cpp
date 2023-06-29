@@ -147,8 +147,8 @@ tl::expected<void, std::string> newton_archive::save(
 }
 
 tl::expected<void, std::string> newton_archive::load(
-    std::istream &is, bool ignore_compute_objects,
-    std::span<uint8_t> buffer) & noexcept {
+    std::istream &is, bool ignore_compute_objects, std::span<uint8_t> buffer,
+    const load_options &opt) & noexcept {
   fu::binary_archive ar;
 
   auto err = ar.load(is, buffer, nullptr);
@@ -207,6 +207,10 @@ tl::expected<void, std::string> newton_archive::load(
   NF_PRIVATE_MARCO_LOAD_MATRIX(map_complex_difference,
                                m_map_complex_difference);
 
+  if (opt.return_archive != nullptr) {
+    *opt.return_archive = std::move(ar);
+  }
+
   return {};
 }
 
@@ -218,7 +222,7 @@ tl::expected<void, std::string> newton_archive::load(
 
 tl::expected<void, std::string> newton_archive::load(
     std::string_view filename, bool ignore_compute_objects,
-    std::span<uint8_t> buffer) & noexcept {
+    std::span<uint8_t> buffer, const load_options &opt) & noexcept {
   if (filename.ends_with(".nfar")) {
     std::ifstream ifs{filename.data()};
     return this->load(ifs, ignore_compute_objects, buffer);
@@ -245,15 +249,15 @@ tl::expected<void, std::string> newton_archive::load(
   }
   fls.push(boost::iostreams::file_source{filename.data(), std::ios::binary});
 
-  return this->load(fls, ignore_compute_objects, buffer);
+  return this->load(fls, ignore_compute_objects, buffer, opt);
 }
 
 tl::expected<newton_archive, std::string> newton_archive::load_archive(
     std::string_view filename, bool ignore_compute_objects,
-    std::span<uint8_t> buffer) noexcept {
+    std::span<uint8_t> buffer, const load_options &opt) noexcept {
   newton_archive ret;
 
-  auto temp = ret.load(filename, ignore_compute_objects, buffer);
+  auto temp = ret.load(filename, ignore_compute_objects, buffer, opt);
   if (!temp.has_value()) {
     return tl::make_unexpected(temp.error());
   }

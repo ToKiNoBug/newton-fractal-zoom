@@ -34,6 +34,21 @@ int main(int argc, char** argv) {
     render->add_option("--rj,--render-json", rt.render_config_filename);
   }
 
+  auto look = capp.add_subcommand("look");
+  look_task lt;
+  {
+    look->add_option("archive", lt.source_file)
+        ->required()
+        ->check(CLI::ExistingFile);
+    look->add_flag("--load-as-render-mode,--lrm", lt.load_as_render_mode);
+    look->add_flag("--show-metainfo,--smi", lt.show_metainfo);
+    look->add_option("--extract-metainfo,--emi", lt.extract_metainfo);
+    look->add_option("--extract-has-value,--ehv", lt.extract_has_value);
+    look->add_option("--extract-nearest-index,--eni", lt.extract_nearest_index);
+    look->add_option("--extract-complex-diff,--ecd",
+                     lt.extract_complex_difference);
+  }
+
   CLI11_PARSE(capp, argc, argv);
 
   nf::newton_archive archive;
@@ -54,6 +69,14 @@ int main(int argc, char** argv) {
     auto result = run_render(rt);
     if (!result.has_value()) {
       fmt::print("Render failed. Detail: {}\n", result.error());
+      return 1;
+    }
+  }
+
+  if (look->count() > 0) {
+    auto result = run_look(lt);
+    if (!result.has_value()) {
+      fmt::print("Failed to lookup. Detail: {}\n", result.error());
       return 1;
     }
   }

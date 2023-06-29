@@ -124,6 +124,8 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
     err = gi->set_complex_difference(src->map_complex_difference());
     NF_NFTOOL_HANDEL_ERROR(err);
 
+    gi->wait_for_finished();
+
     err = gi->run(*render_option_objects.value().second, 0, 0, false);
     NF_NFTOOL_HANDEL_ERROR(err);
 

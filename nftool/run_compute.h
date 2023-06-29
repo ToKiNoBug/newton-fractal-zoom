@@ -39,4 +39,15 @@ struct render_task {
 };
 tl::expected<void, std::string> run_render(const render_task& rt) noexcept;
 
+struct look_task {
+  std::string source_file;
+  bool load_as_render_mode{false};
+  bool show_metainfo{false};
+  std::string extract_metainfo;
+  std::string extract_has_value;
+  std::string extract_nearest_index;
+  std::string extract_complex_difference;
+};
+tl::expected<void, std::string> run_look(const look_task& lt) noexcept;
+
 #endif  // NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H

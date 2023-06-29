@@ -4,7 +4,7 @@ add_executable(nftool
         run_compute.h
         run_compute.cpp
         run_render.cpp
-        )
+        run_look.cpp)
 
 target_link_libraries(nftool PRIVATE
         newton_fractal

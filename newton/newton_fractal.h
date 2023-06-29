@@ -29,10 +29,6 @@
 namespace newton_fractal {
 
 struct meta_data {
-  int rows{0};
-  int cols{0};
-  int iteration{0};
-
   struct compute_objects {
     std::unique_ptr<object_creator> obj_creator{nullptr};
     std::unique_ptr<fractal_utils::wind_base> window{nullptr};
@@ -41,6 +37,10 @@ struct meta_data {
   struct non_compute_info {
     int num_points{0};
   };
+
+  int rows{0};
+  int cols{0};
+  int iteration{0};
   std::variant<compute_objects, non_compute_info> compute_objs{
       compute_objects{}};
 

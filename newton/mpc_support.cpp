@@ -416,8 +416,7 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   const boostmp::mpfr_float c_unit = wind.x_span / cols;
 
   auto compute_part_function = [this](mpfr_srcptr unit, int idx,
-                                      mpfr_srcptr offset,
-                                      mpfr_ptr dest) -> real_type {
+                                      mpfr_srcptr offset, mpfr_ptr dest) {
     mpfr_mul_ui(dest, unit, idx, MPFR_RNDN);
     mpfr_add(dest, dest, unit, MPFR_RNDN);
   };

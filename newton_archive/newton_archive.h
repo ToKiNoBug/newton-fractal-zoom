@@ -67,17 +67,36 @@ class newton_archive {
   [[nodiscard]] tl::expected<void, std::string> save_raw(
       std::string_view filename) const noexcept;
 
+  struct load_options {
+    fu::binary_archive *return_archive{nullptr};
+  };
+
   [[nodiscard]] tl::expected<void, std::string> load(
+      std::istream &is, bool ignore_compute_objects, std::span<uint8_t> buffer,
+      const load_options &opt) & noexcept;
+  [[nodiscard]] inline tl::expected<void, std::string> load(
       std::istream &is, bool ignore_compute_objects,
-      std::span<uint8_t> buffer) & noexcept;
+      std::span<uint8_t> buffer) & noexcept {
+    return this->load(is, ignore_compute_objects, buffer, {});
+  }
 
   [[nodiscard]] tl::expected<void, std::string> load(
       std::string_view filename, bool ignore_compute_objects,
-      std::span<uint8_t> buffer) & noexcept;
+      std::span<uint8_t> buffer, const load_options &opt) & noexcept;
+  [[nodiscard]] inline tl::expected<void, std::string> load(
+      std::string_view filename, bool ignore_compute_objects,
+      std::span<uint8_t> buffer) & noexcept {
+    return this->load(filename, ignore_compute_objects, buffer, {});
+  }
 
   [[nodiscard]] static tl::expected<newton_archive, std::string> load_archive(
       std::string_view filename, bool ignore_compute_objects,
-      std::span<uint8_t> buffer) noexcept;
+      std::span<uint8_t> buffer, const load_options &opt) noexcept;
+  [[nodiscard]] static tl::expected<newton_archive, std::string> load_archive(
+      std::string_view filename, bool ignore_compute_objects,
+      std::span<uint8_t> buffer) noexcept {
+    return load_archive(filename, ignore_compute_objects, buffer, {});
+  }
 };
 
 [[nodiscard]] size_t expected_buffer_size(int rows, int cols) noexcept;
