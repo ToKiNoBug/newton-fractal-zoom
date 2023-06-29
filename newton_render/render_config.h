@@ -63,6 +63,9 @@ tl::expected<render_config, std::string> load_render_config(
 tl::expected<render_config, std::string> load_render_config(
     std::string_view filename) noexcept;
 
+void serialize_render_config(const render_config &, std::string &ret) noexcept;
+std::string serialize_render_config(const render_config &) noexcept;
+
 }  // namespace newton_fractal
 
 #endif  // NEWTON_FRACTAL_ZOOM_RENDER_CONFIG_H

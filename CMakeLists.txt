@@ -28,7 +28,13 @@ if (MPC_FOUND OR LINUX)
     set(NF_mpc_support ON)
 endif ()
 
+#if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+#    set(CMAKE_CUDA_COMPILER ${CMAKE_CXX_COMPILER})
+#    message(STATUS "This project will be compiled with clang, so clang is used instead of nvcc to compile cuda source codes.")
+#endif ()
 enable_language(CUDA)
+message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
+#set(CMAKE_CLANG)
 
 add_subdirectory(newton)
 add_subdirectory(newton_archive)

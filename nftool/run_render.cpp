@@ -1,4 +1,4 @@
-
+#include <iostream>
 #include <newton_archive.h>
 #include <newton_fractal.h>
 #include <fmt/format.h>
@@ -13,7 +13,8 @@ create_render_config_objects(const render_task& rt,
                              int archive_points) noexcept {
   nf::render_config render_config;
   {
-    auto temp = nf::load_render_config(rt.render_config_filename);
+    auto temp =
+        nf::load_render_config(std::string_view{rt.render_config_filename});
     if (!temp.has_value()) {
       return tl::make_unexpected(
           fmt::format("Failed to load render config from \"{}\", detail: {}.",
@@ -74,12 +75,28 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
         "computation together.");
   }
 
+  {
+    auto temp = check_archive(*src);
+    if (!temp.has_value()) {
+      return tl::make_unexpected(
+          fmt::format("The archive is not valid! Detail: {}", temp.error()));
+    }
+  }
+
   auto render_option_objects =
       create_render_config_objects(rt, src->info().num_points());
   if (!render_option_objects.has_value()) {
     return tl::make_unexpected(
         fmt::format("Failed to make render config objects, detail: {}",
                     render_option_objects.error()));
+  }
+
+  if constexpr (true) {
+    fmt::print("The render config is: {}\n",
+               serialize_render_config(render_option_objects.value().first));
+    fmt::print("The render config on gpu is: {}\n",
+               serialize_render_config(
+                   render_option_objects.value().second->config().value()));
   }
 
   std::unique_ptr<nf::gpu_interface> gi{nullptr};

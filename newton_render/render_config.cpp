@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 #include <magic_enum.hpp>
+#include "newton_render.h"
 
 using njson = nlohmann::json;
 
@@ -82,7 +83,7 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
   return ret;
 }
 
-tl::expected<render_config, std::string> parse_render_config(
+tl::expected<render_config, std::string> load_render_config(
     const njson &nj) noexcept {
   render_config ret;
   try {
@@ -131,7 +132,7 @@ tl::expected<render_config, std::string> load_render_config(
   try {
     nj = njson::parse(is, nullptr, true, true);
 
-    auto ret = parse_render_config(nj);
+    auto ret = load_render_config(nj);
     return ret;
   } catch (std::exception &e) {
     return tl::make_unexpected(fmt::format(
@@ -143,6 +144,63 @@ tl::expected<render_config, std::string> load_render_config(
     std::string_view filename) noexcept {
   std::ifstream ifs{filename.data()};
   return load_render_config(ifs);
+}
+
+njson save_mapping(
+    const render_config::render_method::color_value_mapping &cvm) noexcept {
+  njson ret;
+  if (cvm.range[0] == cvm.range[1]) {
+    ret.emplace("range", cvm.range[0]);
+  } else {
+    njson::array_t arr;
+    arr.resize(2);
+    arr[0] = cvm.range[0];
+    arr[1] = cvm.range[1];
+    ret.emplace("range", std::move(arr));
+  }
+
+  ret.emplace("source", magic_enum::enum_name(cvm.src));
+  return ret;
+}
+
+njson save_render_method(const render_config::render_method &rm) noexcept {
+  njson ret;
+  ret.emplace("hue", save_mapping(rm.hue));
+  ret.emplace("saturation", save_mapping(rm.saturation));
+  ret.emplace("value", save_mapping(rm.value));
+  return ret;
+}
+
+njson save_render_config(const render_config &nc) noexcept {
+  njson ret;
+  {
+    njson::array_t methods;
+    methods.reserve(nc.methods.size());
+    for (const auto &m : nc.methods) {
+      methods.emplace_back(save_render_method(m));
+    }
+    ret.emplace("point_methods", std::move(methods));
+  }
+  {
+    njson::array_t color_for_nan{3};
+    for (size_t idx = 0; idx < 3; idx++) {
+      color_for_nan[idx] = nc.color_for_nan.value[idx];
+    }
+    ret.emplace("color_for_nan", std::move(color_for_nan));
+  }
+  return ret;
+}
+
+void serialize_render_config(const render_config &rc,
+                             std::string &ret) noexcept {
+  njson json = save_render_config(rc);
+  ret = json.dump(2);
+}
+
+std::string serialize_render_config(const render_config &rc) noexcept {
+  std::string ret;
+  serialize_render_config(rc, ret);
+  return ret;
 }
 
 }  // namespace newton_fractal

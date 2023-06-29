@@ -98,8 +98,16 @@ NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(
     return color_for_nan;
   }
 
+  static_assert(sizeof(render_config::render_method) == 36);
+
   float h, s, v;
   method_ptr[nearest_idx].map_color(mag_normalized, arg_normalized, h, s, v);
+  assert(nearest_idx < 255);
+
+  if (nearest_idx < 0 || nearest_idx >= 3) {
+    printf("nearest_idx=%i maps to h = %f, s = %f, v = %f.\n", int(nearest_idx),
+           h, s, v);
+  }
 
   float rgb[3];
   fractal_utils::hsv_to_rgb(h, s, v, rgb[0], rgb[1], rgb[2]);

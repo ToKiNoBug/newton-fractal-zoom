@@ -82,6 +82,8 @@ class newton_archive {
 
 [[nodiscard]] size_t expected_buffer_size(int rows, int cols) noexcept;
 
+tl::expected<void, std::string> check_archive(
+    const newton_archive &ar) noexcept;
 }  // namespace newton_fractal
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_ARCHIVE_H

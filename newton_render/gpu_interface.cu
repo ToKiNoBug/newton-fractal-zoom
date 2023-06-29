@@ -262,16 +262,18 @@ __global__ void run_render_1d(
     const nf::render_config::render_method* method_ptr,
     fractal_utils::pixel_RGB color_for_nan, const bool* has_value,
     const uint8_t* nearest_idx, const double2* norm_and_arg,
-    fractal_utils::pixel_RGB* dst_u8c3, int rows, int cols, int skip_rows,
-    int skip_cols, normalize_option norm_option, normalize_option arg_option) {
+    fractal_utils::pixel_RGB* dst_u8c3, coordinate_t size, coordinate_t skip,
+    normalize_option norm_option, normalize_option arg_option) {
   const uint32_t global_thread_idx = blockDim.x * blockIdx.x + threadIdx.x;
-  if (global_thread_idx >= (rows - 2 * skip_rows) * (cols - 2 * skip_cols)) {
+  if (global_thread_idx >=
+      (size.row - 2 * skip.row) * (size.col - 2 * skip.col)) {
     return;
   }
 
   const auto coordinate =
-      compute_idx(rows, cols, skip_rows, skip_cols, global_thread_idx);
-  const int global_offset = index_1d_of_coordinate(rows, cols, coordinate);
+      compute_idx(size.row, size.col, skip.row, skip.col, global_thread_idx);
+  const int global_offset =
+      index_1d_of_coordinate(size.row, size.col, coordinate);
 
   if (!has_value[global_offset]) {
     dst_u8c3[global_offset] = color_for_nan;
@@ -400,7 +402,7 @@ tl::expected<void, std::string> nf::gpu_implementation::run(
         config.method_ptr(), config.color_for_nan(), this->m_has_value.get(),
         this->m_nearest_index.get(),
         (const double2*)this->m_complex_difference.get(), this->m_pixel.get(),
-        this->rows(), this->cols(), skip_rows, skip_cols, mag, arg);
+        {this->rows(), this->cols()}, {skip_rows, skip_cols}, mag, arg);
   }
 
   if (sync) {

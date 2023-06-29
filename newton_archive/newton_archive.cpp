@@ -260,4 +260,27 @@ tl::expected<newton_archive, std::string> newton_archive::load_archive(
   return ret;
 }
 
+tl::expected<void, std::string> check_archive(
+    const newton_archive &ar) noexcept {
+  if (ar.info().num_points() > 255 || ar.info().num_points() <= 0) {
+    return tl::make_unexpected(fmt::format(
+        "num_points should be in range [0,255], but the number of points is {}",
+        ar.info().num_points()));
+  }
+
+  const uint8_t num_points = ar.info().num_points();
+  for (int r = 0; r < ar.info().rows; r++) {
+    for (int c = 0; c < ar.info().cols; c++) {
+      const auto npi = ar.map_nearest_point_idx().at<uint8_t>(r, c);
+      if (npi >= num_points) {
+        return tl::make_unexpected(
+            fmt::format("nearest_point_idx at [{}, {}] is {}, but the number "
+                        "of points is {}.",
+                        r, c, npi, num_points));
+      }
+    }
+  }
+  return {};
+}
+
 }  // namespace newton_fractal

@@ -6,10 +6,18 @@
 #define NEWTON_FRACTAL_ZOOM_NEWTON_RENDER_H
 
 #include <memory>
-// #include <newton_fractal.h>
 #include "render_config.h"
 #include "gpu_interface.h"
+#include <nlohmann/json.hpp>
 
-namespace newton_fractal {}
+using njson = nlohmann::json;
+
+namespace newton_fractal {
+
+tl::expected<render_config, std::string> load_render_config(
+    const njson&) noexcept;
+
+njson save_render_config(const render_config& nc) noexcept;
+}  // namespace newton_fractal
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_RENDER_H

@@ -415,29 +415,28 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   const boostmp::mpfr_float r_unit = -wind.y_span / rows;
   const boostmp::mpfr_float c_unit = wind.x_span / cols;
 
+  auto compute_part_function = [this](mpfr_srcptr unit, int idx,
+                                      mpfr_srcptr offset,
+                                      mpfr_ptr dest) -> real_type {
+    mpfr_mul_ui(dest, unit, idx, MPFR_RNDN);
+    mpfr_add(dest, dest, unit, MPFR_RNDN);
+  };
+
 #pragma omp parallel for schedule(guided) default(shared)
   for (int r = 0; r < (int)rows; r++) {
     thread_local complex_type z{0, 0, (uint32_t)this->_precision};
     thread_local buffer_t buf{this->_precision};
-    {
-      // z.imag(r0c0.real()+r*r_unit)
-      auto& imag_temp = buf.real_arr[0];
-      mpfr_mul_ui(imag_temp.backend().data(), r_unit.backend().data(), r,
-                  MPFR_RNDN);
-      mpfr_add(mpc_imagref(z.backend().data()), imag_temp.backend().data(),
-               r0.backend().data(), MPFR_RNDN);
 
-      // mpc_imag(z.backend().data(), imag_temp.backend().data(), MPFR_RNDN);
-    }
+    thread_local real_type imag_part{0, (uint32_t)this->_precision};
+
+    compute_part_function(r_unit.backend().data(), r, r0.backend().data(),
+                          imag_part.backend().data());
+
     for (int c = 0; c < (int)cols; c++) {
-      {
-        // z.real(r0c0.real() + c * c_unit);
-        auto& real_temp = buf.real_arr[0];
-        mpfr_mul_ui(real_temp.backend().data(), c_unit.backend().data(), c,
-                    MPFR_RNDN);
-        mpfr_add(mpc_realref(z.backend().data()), real_temp.backend().data(),
-                 c0.backend().data(), MPFR_RNDN);
-      }
+      mpfr_set(mpc_imagref(z.backend().data()), imag_part.backend().data(),
+               MPFR_RNDN);
+      compute_part_function(c_unit.backend().data(), c, c0.backend().data(),
+                            mpc_realref(z.backend().data()));
 
       auto result = this->compute_single(z, iteration_times, buf);
       opt.bool_has_result.at<bool>(r, c) = result.has_value();
