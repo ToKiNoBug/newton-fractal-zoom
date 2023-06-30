@@ -129,8 +129,10 @@ inline fractal_utils::pixel_RGB render_cpu(
     float mag_normalized, float arg_normalized) noexcept {
   assert(methods.size() > nearest_idx);
   assert(nearest_idx >= 0);
-  assert(mag_normalized >= 0 && mag_normalized <= 1);
-  assert(arg_normalized >= 0 && arg_normalized <= 1);
+  if (has_value) {
+    assert(mag_normalized >= 0 && mag_normalized <= 1);
+    assert(arg_normalized >= 0 && arg_normalized <= 1);
+  }
   return render(methods.data(), color_for_nan, has_value, nearest_idx,
                 mag_normalized, arg_normalized);
 }

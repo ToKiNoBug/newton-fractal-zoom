@@ -8,6 +8,9 @@ if (${MSVC})
     #add_compile_options()
 endif ()
 
+#add_compile_options(-pg)
+#add_link_options(-pg)
+
 
 include(cmake/configure_3rdParty.cmake)
 

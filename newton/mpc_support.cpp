@@ -92,45 +92,19 @@ void nf::mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
   mpfr_srcptr d = mpc_imagref(z2);
 
   {
-    // mpf_class& bd = buf.float_arr[0];
-    // mpf_class& ad = buf.float_arr[1];
-    mpfr_ptr bd = mpc_realref(buf);
-    mpfr_ptr ad = mpc_imagref(buf);
-
-    // bd = b * d;
-    mpfr_mul(bd, b, d, MPC_RND_IM(rnd));
-
-    // ad = a * d;
-    mpfr_mul(ad, a, d, MPC_RND_RE(rnd));
-
-    // a->ac, b-> bc
-    // a *= c;
-    // b *= c;
-    mpfr_mul(a, a, c, MPC_RND_RE(rnd));
-    mpfr_mul(b, b, c, MPC_RND_IM(rnd));
-
-    // a += bd;
-    // b -= ad;
-    mpfr_add(a, a, bd, MPC_RND_RE(rnd));
-    mpfr_sub(b, b, ad, MPC_RND_IM(rnd));
+    mpfr_ptr a_copy = mpc_realref(buf);
+    mpfr_set(a_copy, a, MPC_RND_RE(rnd));
+    mpfr_fmma(a, a, c, b, d, MPC_RND_RE(rnd));
+    mpfr_fmms(b, b, c, a_copy, d, MPC_RND_IM(rnd));
   }
   {
-    // auto& c2 = buf.float_arr[0];
-    // auto& d2 = buf.float_arr[1];
-    mpfr_ptr c2 = mpc_realref(buf);
-    mpfr_ptr d2 = mpc_imagref(buf);
-
-    // c2 = c * c;
-    mpfr_mul(c2, c, c, MPC_RND_RE(rnd));
-    // d2 = d * d;
-    mpfr_mul(d2, d, d, MPC_RND_IM(rnd));
-    // c2 += d2;  // c2-> c2+d2
-    mpfr_add(c2, c2, d2, MPC_RND_RE(rnd));
+    mpfr_ptr c2_add_d2 = mpc_realref(buf);
+    mpfr_fmma(c2_add_d2, c, c, d, d, MPC_RND_RE(rnd));
 
     // a /= c2;
     // b /= c2;
-    mpfr_div(a, a, c2, MPC_RND_RE(rnd));
-    mpfr_div(b, b, c2, MPC_RND_IM(rnd));
+    mpfr_div(a, a, c2_add_d2, MPC_RND_RE(rnd));
+    mpfr_div(b, b, c2_add_d2, MPC_RND_IM(rnd));
   }
 }
 
