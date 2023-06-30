@@ -7,6 +7,7 @@
 #include "newton_equation.hpp"
 #include <iostream>
 #include <complex>
+#include <fmt/std.h>
 
 #include "newton_equation.hpp"
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -58,10 +59,33 @@ void test_euqation() noexcept {
   }
 }
 
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+void test_division(std::complex<double> z1_f64, std::complex<double> z2_f64,
+                   unsigned int precision) noexcept {
+  boostmp::mpc_complex z1{z1_f64.real(), z1_f64.imag(), precision};
+  boostmp::mpc_complex z2{z2_f64.real(), z2_f64.imag(), precision};
+  boostmp::mpc_complex buf{0, precision};
+
+  nf::mpc_div_inplace_buffered(z1.backend().data(), z2.backend().data(),
+                               MPC_RNDNN, buf.backend().data());
+
+  auto result_correct = z1_f64 / z2_f64;
+  fmt::print("Correct result: {}+{}i\n", result_correct.real(),
+             result_correct.imag());
+  auto result = z1.convert_to<std::complex<double>>();
+  fmt::print("Result of nf::mpc_div_inplace_buffered: {}+{}i\n", result.real(),
+             result.imag());
+}
+#endif
+
 int main(int argc, char** argv) {
-  test_euqation<nf::equation_fixed_prec<2>, double>();
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+  test_division({10, 3}, {-3, 1}, 50);
+#endif
+
   if (false) {
     test_euqation<nf::equation_fixed_prec<1>, float>();
+    test_euqation<nf::equation_fixed_prec<2>, double>();
     test_euqation<nf::equation_fixed_prec<4>, double>();
     test_euqation<nf::equation_fixed_prec<8>, double>();
     test_euqation<nf::equation_fixed_prec<16>, double>();

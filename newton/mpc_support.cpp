@@ -108,7 +108,7 @@ void nf::mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
 
     // a += bd;
     // b -= ad;
-    mpfr_add(a, a, ad, MPC_RND_RE(rnd));
+    mpfr_add(a, a, bd, MPC_RND_RE(rnd));
     mpfr_sub(b, b, ad, MPC_RND_IM(rnd));
   }
   {
@@ -296,11 +296,12 @@ void newton_equation_mpc::iterate_inplace(complex_type& z,
           MPC_RNDNN);
 
   // f /= df;
-  mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
-          MPC_RNDNN);
-#warning mpc_div_inplace_buffered is incorrect in the real part. Fix it and comment the previous line later
-  /*mpc_div_inplace_buffered(f.backend().data(), df.backend().data(), MPC_RNDNN,
-                           extra_buf.backend().data());*/
+  //  mpc_div(f.backend().data(), f.backend().data(), df.backend().data(),
+  //          MPC_RNDNN);
+  // #warning mpc_div_inplace_buffered is incorrect in the real part. Fix it and
+  // comment the previous line later
+  mpc_div_inplace_buffered(f.backend().data(), df.backend().data(), MPC_RNDNN,
+                           extra_buf.backend().data());
 
   // z -= f;
   mpc_sub(z.backend().data(), z.backend().data(), f.backend().data(),
