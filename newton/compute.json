@@ -22,7 +22,7 @@
     }
   ],
   "backend": "mpfr",
-  "precision": 50,
+  "precision": 200,
   "window": {
     "center": [
       0,

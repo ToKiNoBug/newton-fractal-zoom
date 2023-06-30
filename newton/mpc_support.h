@@ -111,7 +111,9 @@ void mpc_div_buffered(mpc_ptr dst, mpc_srcptr a, mpc_srcptr b, mpc_rnd_t rnd,
                       mpc_ptr buf) noexcept;
 */
 void mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
-                              mpc_ptr buf);
+                              mpc_ptr buf) noexcept;
+
+void mpc_norm2_no_malloc(mpfr_ptr dst, mpc_srcptr z, mpc_rnd_t rnd) noexcept;
 
 }  // namespace newton_fractal
 

@@ -56,16 +56,19 @@ void nf::mpc_mul_buffered(mpc_ptr dst, mpc_srcptr z1, mpc_srcptr z2,
   mpfr_srcptr c = mpc_realref(z2);
   mpfr_srcptr d = mpc_imagref(z2);
 
-  mpfr_mul(mpc_realref(dst), a, c, MPC_RND_RE(rnd));
-  mpfr_mul(mpc_imagref(dst), b, c, MPC_RND_IM(rnd));
+  mpfr_fmms(mpc_realref(dst), a, c, b, d, MPC_RND_RE(rnd));
+  mpfr_fmma(mpc_imagref(dst), b, c, a, d, MPC_RND_IM(rnd));
 
-  mpfr_ptr bd = mpc_realref(buf);
-  mpfr_ptr ad = mpc_imagref(buf);
-  mpfr_mul(bd, b, d, MPC_RND_RE(rnd));
-  mpfr_mul(ad, a, d, MPC_RND_IM(rnd));
-
-  mpfr_sub(mpc_realref(dst), mpc_realref(dst), bd, MPC_RND_RE(rnd));
-  mpfr_add(mpc_imagref(dst), mpc_imagref(dst), ad, MPC_RND_IM(rnd));
+  //  mpfr_mul(mpc_realref(dst), a, c, MPC_RND_RE(rnd));
+  //  mpfr_mul(mpc_imagref(dst), b, c, MPC_RND_IM(rnd));
+  //
+  //  mpfr_ptr bd = mpc_realref(buf);
+  //  mpfr_ptr ad = mpc_imagref(buf);
+  //  mpfr_mul(bd, b, d, MPC_RND_RE(rnd));
+  //  mpfr_mul(ad, a, d, MPC_RND_IM(rnd));
+  //
+  //  mpfr_sub(mpc_realref(dst), mpc_realref(dst), bd, MPC_RND_RE(rnd));
+  //  mpfr_add(mpc_imagref(dst), mpc_imagref(dst), ad, MPC_RND_IM(rnd));
 }
 
 /*
@@ -74,7 +77,7 @@ void nf::mpc_div_buffered(mpc_ptr dst, mpc_srcptr a, mpc_srcptr b,
 */
 
 void nf::mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
-                                  mpc_ptr buf) {
+                                  mpc_ptr buf) noexcept {
   assert(z1 != z2);
   assert(buf != z1);
   assert(buf != z2);
@@ -129,6 +132,13 @@ void nf::mpc_div_inplace_buffered(mpc_ptr z1, mpc_srcptr z2, mpc_rnd_t rnd,
     mpfr_div(a, a, c2, MPC_RND_RE(rnd));
     mpfr_div(b, b, c2, MPC_RND_IM(rnd));
   }
+}
+
+void nf::mpc_norm2_no_malloc(mpfr_ptr dst, mpc_srcptr z,
+                             mpc_rnd_t rnd) noexcept {
+  auto real = mpc_realref(z);
+  auto imag = mpc_imagref(z);
+  mpfr_fmma(dst, real, real, imag, imag, MPFR_RNDN);
 }
 
 newton_equation_mpc::newton_equation_mpc(int precision) {
@@ -363,7 +373,9 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
 
     // complex_type diff_norm2;
     // compute_norm2(diff, diff_norm2);
-    mpc_norm(diff_norm2.backend().data(), diff.backend().data(), MPFR_RNDN);
+    // mpc_norm(diff_norm2.backend().data(), diff.backend().data(), MPFR_RNDN);
+    nf::mpc_norm2_no_malloc(diff_norm2.backend().data(), diff.backend().data(),
+                            MPC_RNDNN);
 
     if (diff_norm2 < min_norm2) {
       min_idx = idx;
@@ -378,8 +390,10 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
   assert(min_idx >= 0);
   assert(min_idx < this->_points.size());
 
-  return single_result{min_idx, std::complex<double>{double(min_diff.real()),
-                                                     double(min_diff.imag())}};
+  const auto min_diff_data = min_diff.backend().data();
+  return single_result{min_idx,
+                       {mpfr_get_d(mpc_realref(min_diff_data), MPFR_RNDN),
+                        mpfr_get_d(mpc_imagref(min_diff_data), MPFR_RNDN)}};
 }
 
 /*
