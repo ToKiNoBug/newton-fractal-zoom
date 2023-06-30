@@ -82,9 +82,11 @@ std::optional<real_t> decode(const njson& nj) noexcept {
 #endif
 
       if constexpr (is_quadmath) {
+#ifdef __GNUC__
         char* p_end = nullptr;
         __float128 ret = strtoflt128(str.c_str(), &p_end);
         return ret;
+#endif
       } else {
         thread_local std::stringstream ss;
         ss << str;
