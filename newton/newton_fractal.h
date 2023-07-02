@@ -83,6 +83,8 @@ struct meta_data {
     }
     return std::get<1>(this->compute_objs).num_points;
   }
+
+  void set_precision(int precision) & noexcept;
 };
 
 tl::expected<meta_data, std::string> load_metadata(

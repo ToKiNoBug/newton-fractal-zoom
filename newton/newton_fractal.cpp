@@ -25,6 +25,18 @@ meta_data::meta_data(const meta_data& src) noexcept
   }
 }
 
+void meta_data::set_precision(int precision) & noexcept {
+  if (this->compute_objs.index() == 0) {
+    auto& info = std::get<0>(this->compute_objs);
+    info.obj_creator->set_precision(precision);
+    info.obj_creator->set_precision(*info.window);
+    info.obj_creator->set_precision(*info.equation);
+  } else {
+    auto& info = std::get<1>(this->compute_objs);
+    info.precision = precision;
+  }
+}
+
 tl::expected<meta_data, std::string> load_metadata(
     std::string_view json, bool ignore_compute_objects) noexcept {
   njson nj;
@@ -168,4 +180,5 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
 
   return ret;
 }
+
 }  // namespace newton_fractal

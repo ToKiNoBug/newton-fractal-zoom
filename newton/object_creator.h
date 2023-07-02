@@ -35,6 +35,7 @@ class object_creator {
                                      std::string>
   create_equation(const njson&) const noexcept = 0;
 
+  virtual void set_precision(int prec) & noexcept = 0;
   [[nodiscard]] virtual tl::expected<void, std::string> set_precision(
       fractal_utils::wind_base&) const noexcept = 0;
   [[nodiscard]] virtual tl::expected<void, std::string> set_precision(

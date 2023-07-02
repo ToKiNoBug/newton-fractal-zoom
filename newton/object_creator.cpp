@@ -236,6 +236,10 @@ class object_creator_by_prec
     return true;
   }
 
+  void set_precision(int _prec) & noexcept final {
+    assert(this->precision() == _prec);
+  }
+
   [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
   create_equation(const njson& nj) const noexcept override {
     auto points = this->decode_points(nj);
@@ -281,6 +285,7 @@ class object_creator_mpc
     return std::make_unique<object_creator_mpc>(*this);
   }
 
+  void set_precision(int prec) & noexcept final { this->_precision = prec; }
   [[nodiscard]] int precision() const noexcept override {
     return this->_precision;
   }
