@@ -36,6 +36,9 @@ struct meta_data {
   };
   struct non_compute_info {
     int num_points{0};
+    fractal_utils::float_backend_lib backend{
+        fractal_utils::float_backend_lib::unknown};
+    int precision{0};
   };
 
   int rows{0};

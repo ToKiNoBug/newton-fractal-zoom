@@ -80,8 +80,11 @@ tl::expected<meta_data, std::string> load_metadata(
     }
 
     if (ignore_compute_objects) {
-      ret.compute_objs = meta_data::non_compute_info{
-          .num_points = (int)nj.at("points").size()};
+      meta_data::non_compute_info info{.num_points =
+                                           (int)nj.at("points").size()};
+      info.backend = backend.value();
+      info.precision = precision;
+      ret.compute_objs = info;
       return ret;
     }
 
