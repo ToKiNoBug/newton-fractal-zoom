@@ -84,6 +84,20 @@ struct meta_data {
     return std::get<1>(this->compute_objs).num_points;
   }
 
+  [[nodiscard]] int precision() const noexcept {
+    if (this->compute_objs.index() == 0) {
+      return this->obj_creator()->precision();
+    }
+    return std::get<1>(this->compute_objs).precision;
+  }
+
+  [[nodiscard]] auto backend() const noexcept {
+    if (this->compute_objs.index() == 0) {
+      return this->obj_creator()->backend_lib();
+    }
+    return std::get<1>(this->compute_objs).backend;
+  }
+
   void set_precision(int precision) & noexcept;
 };
 
@@ -95,7 +109,6 @@ tl::expected<meta_data, std::string> load_metadata(
     std::istream& is, bool ignore_compute_objects) noexcept;
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept;
-
 };  // namespace newton_fractal
 
 namespace fu = fractal_utils;

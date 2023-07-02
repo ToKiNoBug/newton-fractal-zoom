@@ -17,11 +17,27 @@ int main(int argc, char** argv) {
     compute->add_option("meta-info-file", ct.filename, "Task to compute")
         ->check(CLI::ExistingFile)
         ->required();
-    compute->add_option("-o", ct.archive_filename);
-    compute->add_option("--rows", ct.row_override);
-    compute->add_option("-j,--threads", ct.threads);
+    compute->add_option("-o", ct.archive_filename,
+                        "The filename of generated archive");
+    compute
+        ->add_option("-j,--threads", ct.threads,
+                     "Number of threads for computation.")
+        ->default_val(std::thread::hardware_concurrency());
+    compute->add_option("--rows", ct.row_override,
+                        "Rows that overrides the default value.");
+    compute
+        ->add_option("--cols", ct.col_override,
+                     "Cols that overrides the default value.")
+        ->default_val(std::nullopt);
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
-    compute->add_flag("--track-memory", ct.track_memory)->default_val(false);
+    compute->add_option(
+        "-p,--precision", ct.precision_override,
+        "Precision that override the default value. Only available for mpfr.");
+    compute
+        ->add_flag("--track-memory", ct.track_memory,
+                   "Record the calling of malloc and realloc by gmp, only "
+                   "available for mpfr.")
+        ->default_val(false);
 #endif
   }
 

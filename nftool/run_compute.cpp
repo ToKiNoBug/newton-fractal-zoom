@@ -43,6 +43,29 @@ tl::expected<void, std::string> run_compute(const compute_task& ct) noexcept {
     }
     ar.info() = std::move(md_e.value());
   }
+
+  if (ct.row_override.has_value()) {
+    ar.info().rows = ct.row_override.value();
+  }
+  if (ct.col_override.has_value()) {
+    ar.info().cols = ct.col_override.value();
+  }
+  if (ct.iteration_override.has_value()) {
+    ar.info().iteration = ct.iteration_override.value();
+  }
+  if (ct.precision_override.has_value()) {
+    if (ar.info().obj_creator()->is_fixed_precision()) {
+      if (ar.info().precision() != ct.precision_override.value()) {
+        return tl::make_unexpected(
+            fmt::format("The precision of floating type is fixed at {}, but "
+                        "trying to override it to {}.",
+                        ar.info().precision(), ct.precision_override.value()));
+      }
+    } else {
+      ar.info().set_precision(ct.precision_override.value());
+    }
+  }
+
   ar.setup_matrix();
 
   nf::newton_equation_base::compute_option option{ar.map_has_result(),
