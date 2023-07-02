@@ -275,6 +275,17 @@ tl::expected<void, std::string> check_archive(
   const uint8_t num_points = ar.info().num_points();
   for (int r = 0; r < ar.info().rows; r++) {
     for (int c = 0; c < ar.info().cols; c++) {
+      if (ar.map_has_result().at<bool>(r, c)) {
+        const auto val =
+            ar.map_complex_difference().at<std::complex<double>>(r, c);
+        if (!std::isfinite(val.real()) || !std::isfinite(val.imag())) {
+          return tl::make_unexpected(fmt::format(
+              "complex_difference at [{}, {}] is {}+{}i, but has_result is {}",
+              r, c, val.real(), val.imag(),
+              ar.map_has_result().at<bool>(r, c)));
+        }
+      }
+
       const auto npi = ar.map_nearest_point_idx().at<uint8_t>(r, c);
       if (npi >= num_points) {
         return tl::make_unexpected(
@@ -284,6 +295,7 @@ tl::expected<void, std::string> check_archive(
       }
     }
   }
+
   return {};
 }
 
