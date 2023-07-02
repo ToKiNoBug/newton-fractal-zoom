@@ -271,7 +271,7 @@ class object_creator_mpc
     : public object_creator_default_impl<boostmp::mpc_complex,
                                          boostmp::mpfr_float> {
  private:
-  const int _precision{0};
+  int _precision{0};
 
  public:
   explicit object_creator_mpc(int precision) : _precision{precision} {}
