@@ -44,6 +44,12 @@ class object_creator {
   [[nodiscard]] virtual tl::expected<njson, std::string> save_window(
       const fractal_utils::wind_base& wb) const noexcept = 0;
 
+  [[nodiscard]] virtual tl::expected<std::string, std::string> encode_centerhex(
+      const fractal_utils::wind_base& wb) const noexcept = 0;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> decode_centerhex(
+      std::string_view hex, fractal_utils::wind_base& wb) const noexcept = 0;
+
   [[nodiscard]] virtual njson::array_t save_equation(
       const newton_equation_base&) const noexcept;
 

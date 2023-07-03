@@ -99,6 +99,8 @@ class object_creator_default_impl : public object_creator {
   using real_type = real_t;
   using complex_type = complex_t;
 
+  static constexpr char dynamic_precision_hex_seperator = ',';
+
   [[nodiscard]] fractal_utils::float_backend_lib backend_lib()
       const noexcept override {
     return fu::backend_of<real_t>();
@@ -178,6 +180,83 @@ class object_creator_default_impl : public object_creator {
     return ret;
   }
 
+  [[nodiscard]] tl::expected<std::string, std::string> encode_centerhex(
+      const fractal_utils::wind_base& wb) const noexcept override {
+    if (!wb.float_type_matches<real_t>()) {
+      return tl::make_unexpected(
+          fmt::format("Type of floating point number mismatch."));
+    }
+
+    const auto& wind = dynamic_cast<const fu::center_wind<real_t>&>(wb);
+    std::string ret{};
+    ret.reserve(4096);
+    std::vector<uint8_t> bin;
+    bin.resize(2048);
+    std::string temp;
+    {
+      const auto bytes = fu::encode_float(wind.center[0], bin);
+      bin.resize(bytes);
+      temp.resize(bytes * 2 + 16);
+      auto chars = fu::bin_2_hex(bin, temp, true);
+      temp.resize(chars.value());
+      ret += temp;
+    }
+    const bool is_fixed = this->is_fixed_precision();
+    {
+      const auto bytes = fu::encode_float(wind.center[1], bin);
+      bin.resize(bytes);
+      temp.resize(bytes * 2 + 16);
+      // for fixed precision, encode to a string; otherwise encode as two string
+      // seperated by ','
+      auto chars = fu::bin_2_hex(bin, temp, !is_fixed);
+      temp.resize(chars.value());
+
+      if (is_fixed) {
+        ret += temp;
+      } else {
+        ret.push_back(',');
+        ret += temp;
+      }
+    }
+
+    return ret;
+  }
+
+  [[nodiscard]] tl::expected<void, std::string> decode_centerhex(
+      std::string_view hex,
+      fractal_utils::wind_base& wb) const noexcept override {
+    if (!wb.float_type_matches<real_t>()) {
+      return tl::make_unexpected(
+          fmt::format("Type of floating point number mismatch."));
+    }
+
+    auto& wind = dynamic_cast<fu::center_wind<real_t>&>(wb);
+    std::vector<uint8_t> bin;
+    bin.resize(hex.size());
+    {
+      auto bytes = fu::hex_2_bin(hex, bin);
+      bin.resize(bytes.value());
+    }
+    if (bin.size() % 2 != 0) {
+      return tl::make_unexpected(
+          fmt::format("Invaid centerhex, the decoded binary contains {} bytes, "
+                      "but expected even number.",
+                      bin.size()));
+    }
+
+    for (size_t idx = 0; idx < 2; idx++) {
+      const size_t offset = idx * (bin.size() / 2);
+
+      if (!this->decode_float_single({bin.data() + offset, bin.size() / 2},
+                                     wind.center[idx])) {
+        return tl::make_unexpected(fmt::format(
+            "Failed to decode the {}-th component of center hex.", idx));
+      }
+    }
+
+    return {};
+  }
+
  protected:
   [[nodiscard]] tl::expected<std::vector<complex_type>, std::string>
   decode_points(const njson& nj) const noexcept {
@@ -211,6 +290,17 @@ class object_creator_default_impl : public object_creator {
     }
 
     return points;
+  }
+
+  [[nodiscard]] bool decode_float_single(std::span<const uint8_t> bin,
+                                         real_t& dst) const noexcept {
+    auto res = fu::decode_float<real_t>(bin);
+
+    if (!res.has_value()) {
+      return false;
+    }
+    dst = std::move(res.value());
+    return true;
   }
 };
 
@@ -348,6 +438,61 @@ class object_creator_mpc
           "Can not set precision. The floating type is not mpc");
     }
     eqp->set_precision(this->precision());
+    return {};
+  }
+
+  [[nodiscard]] tl::expected<void, std::string> decode_centerhex(
+      std::string_view hex, fractal_utils::wind_base& wb) const noexcept final {
+    if (!wb.float_type_matches<real_type>()) {
+      return tl::make_unexpected(
+          fmt::format("Can not set precision. Floating type mismatch."));
+    }
+    auto& wind = dynamic_cast<fu::center_wind<real_type>&>(wb);
+    const auto seperater_location =
+        hex.find_first_of(dynamic_precision_hex_seperator);
+    if (seperater_location == std::string_view::npos) {
+      return tl::make_unexpected(
+          fmt::format("The hex string doesn't contain a separator (aka \'{}\')",
+                      dynamic_precision_hex_seperator));
+    }
+    {
+      const auto last_loc = hex.find_last_of(dynamic_precision_hex_seperator);
+      if (last_loc != seperater_location) {
+        return tl::make_unexpected(
+            "The hex string contains multiple separators");
+      }
+    }
+    std::vector<uint8_t> bin;
+    auto fun_write_float = [hex, &wind, this](
+                               size_t idx, std::span<const uint8_t> bin_single)
+        -> tl::expected<void, std::string> {
+      auto flt = fu::decode_float<real_type>(bin_single);
+      if (!flt.has_value()) {
+        return tl::make_unexpected(fmt::format(
+            "Failed to decode the {}-th component of center.", idx));
+      }
+      wind.center[idx] = std::move(flt.value());
+      return {};
+    };
+    {
+      bin.resize(seperater_location * 2);
+      auto bytes = fu::hex_2_bin({hex.data(), seperater_location}, bin);
+      bin.resize(bytes.value());
+      auto err = fun_write_float(0, bin);
+      if (!err.has_value()) {
+        return tl::make_unexpected(std::move(err.error()));
+      }
+    }
+    {
+      bin.resize(hex.size() * 2);
+      auto bytes = fu::hex_2_bin(
+          {hex.data() + seperater_location + 1, &*hex.end()}, bin);
+      bin.resize(bytes.value());
+      auto err = fun_write_float(1, bin);
+      if (!err.has_value()) {
+        return tl::make_unexpected(std::move(err.error()));
+      }
+    }
     return {};
   }
 };
