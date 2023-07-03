@@ -3,6 +3,7 @@
 //
 
 #include "newton_zoomer.h"
+#include <fstream>
 
 newton_zoomer::newton_zoomer(QWidget *parent)
     : fractal_utils::zoom_window{parent} {
@@ -11,7 +12,7 @@ newton_zoomer::newton_zoomer(QWidget *parent)
   }
   this->set_label_widget(new newton_label{this});
 
-  this->set_frame_file_extensions("*.nfar;*.nfar.zst");
+  this->set_frame_file_extensions("*.nfar;*.nfar.zst;;*.json");
 }
 
 [[nodiscard]] std::unique_ptr<fu::wind_base> newton_zoomer::create_wind()
@@ -35,34 +36,34 @@ void newton_zoomer::compute(const fu::wind_base &wind,
 
   ar.info() = this->template_metadata();
 
-  if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
-    const int new_prec =
-        this->template_metadata().obj_creator()->suggested_precision_of(
-            wind, this->rows(), this->cols());
-    {
-      auto temp = this->template_metadata().clone_with_precision(new_prec);
-      if (!temp.has_value()) {
-        QMessageBox::critical(
-            nullptr, "Failed to compute",
-            QString{
-                fmt::format(
-                    "Cannot update precision of metadata, clone_with_precision "
-                    "failed with following information: \n{}",
-                    temp.error())
-                    .data()});
-        exit(1);
-      }
-      ar.info() = std::move(temp.value());
-    }
-    fmt::print("Current precision: {}\n", new_prec);
-  }
-
   {
     const bool copy_success = wind.copy_to(ar.info().window());
     assert(copy_success);
-    if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
-      ar.info().obj_creator()->set_precision(*ar.info().window());
-    }
+  }
+
+  if (this->auto_precision &&
+      !this->template_metadata().obj_creator()->is_fixed_precision()) {
+    const int new_prec =
+        this->template_metadata().obj_creator()->suggested_precision_of(
+            wind, this->rows(), this->cols());
+    fmt::print("Current precision: {}\n", new_prec);
+
+    ar.info().set_precision(new_prec);
+    //    {
+    //      auto temp =
+    //      this->template_metadata().clone_with_precision(new_prec); if
+    //      (!temp.has_value()) {
+    //        QMessageBox::critical(
+    //            nullptr, "Failed to compute",
+    //            QString{
+    //                fmt::format(
+    //                    "Cannot update precision of metadata,
+    //                    clone_with_precision " "failed with following
+    //                    information: \n{}", temp.error()) .data()});
+    //        exit(1);
+    //      }
+    //      ar.info() = std::move(temp.value());
+    //    }
   }
 
   ar.setup_matrix();
@@ -155,6 +156,17 @@ QString newton_zoomer::export_frame(QString _filename,
         "The passed std::any reference is not a newton_archive instance.");
   }
 
+  if (_filename.endsWith(".json")) {
+    auto res = save_metadata(ar_ptr->info());
+    if (!res.has_value()) {
+      return QString::fromUtf8(res.error());
+    }
+    std::ofstream ofs{filename};
+    ofs << res.value().dump(2);
+    ofs.close();
+    return {};
+  }
+
   auto err = ar_ptr->save(filename);
   if (!err.has_value()) {
     return QString::fromUtf8(err.error());
@@ -165,13 +177,13 @@ QString newton_zoomer::export_frame(QString _filename,
 
 void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
                                         bool is_scaling_up) {
-  fu::zoom_window::received_wheel_move(pos, is_scaling_up);
-
-  if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
+  if (this->auto_precision &&
+      !this->template_metadata().obj_creator()->is_fixed_precision()) {
     auto &cur = this->current_result();
     const int new_prec =
         this->template_metadata().obj_creator()->suggested_precision_of(
-            *cur.wind, this->rows(), this->cols());
+            *cur.wind, this->rows(), this->cols()) +
+        2;
     auto new_objc = this->template_metadata().obj_creator()->copy();
     new_objc->set_precision(new_prec);
     auto err = new_objc->set_precision(*cur.wind);
@@ -184,4 +196,5 @@ void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
       exit(1);
     }
   }
+  fu::zoom_window::received_wheel_move(pos, is_scaling_up);
 }

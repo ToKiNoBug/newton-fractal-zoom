@@ -448,10 +448,13 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
   boostmp::mpfr_float c_unit = wind.x_span / cols;
   c_unit.precision(this->_precision);
 
-  auto compute_part_function = [](mpfr_srcptr unit, int idx, mpfr_srcptr offset,
-                                  mpfr_ptr dest) {
+  auto compute_part_function = [this](mpfr_srcptr unit, int idx,
+                                      mpfr_srcptr offset, mpfr_ptr dest) {
+    //    assert(mpfr_get_prec(unit) >= this->_precision);
+    //    assert(mpfr_get_prec(offset) >= this->_precision);
     mpfr_mul_ui(dest, unit, idx, MPFR_RNDN);
     mpfr_add(dest, dest, offset, MPFR_RNDN);
+    // assert(mpfr_get_prec(dest) >= this->_precision);
   };
 
 #pragma omp parallel for schedule(guided) default(shared)
@@ -469,6 +472,10 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                MPFR_RNDN);
       compute_part_function(c_unit.backend().data(), c, c0.backend().data(),
                             mpc_realref(z.backend().data()));
+      //      assert(mpfr_get_prec(mpc_imagref(z.backend().data())) >=
+      //             this->_precision);
+      //      assert(mpfr_get_prec(mpc_realref(z.backend().data())) >=
+      //             this->_precision);
 
       // auto z_stdc = z.convert_to<std::complex<double>>();
 

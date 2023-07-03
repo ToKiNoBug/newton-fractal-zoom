@@ -18,6 +18,7 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   ~newton_zoomer() final = default;
 
   nf::render_config render_config;
+  bool auto_precision{false};
 
   [[nodiscard]] inline auto &template_metadata() noexcept {
     return this->m_template_metadata;

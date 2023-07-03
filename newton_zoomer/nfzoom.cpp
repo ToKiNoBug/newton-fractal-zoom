@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
   std::string render_config;
   int scale{1};
   uint32_t threads{std::thread::hardware_concurrency()};
+  bool auto_precision{false};
   capp.add_option("source", compute_src)->check(CLI::ExistingFile)->required();
   capp.add_option("--rj,--render-json", render_config)
       ->check(CLI::ExistingFile)
@@ -21,6 +22,7 @@ int main(int argc, char** argv) {
   capp.add_option("-j,--threads", threads)
       ->default_val(std::thread::hardware_concurrency());
   capp.add_option("--scale", scale)->default_val(1);
+  capp.add_flag("--auto-precision", auto_precision)->default_val(false);
 
   CLI11_PARSE(capp, argc, argv);
 
@@ -28,6 +30,7 @@ int main(int argc, char** argv) {
 
   newton_zoomer zoomer;
   zoomer.set_scale(scale);
+  zoomer.auto_precision = auto_precision;
 
   {
     auto mi = nf::load_metadata_from_file(compute_src, false);
