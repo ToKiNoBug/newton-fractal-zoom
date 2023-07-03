@@ -74,6 +74,6 @@ void newton_label::mousePressEvent(QMouseEvent* e) {
       }
     }
   }
-
+  
   scalable_label::mousePressEvent(e);
 }

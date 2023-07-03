@@ -55,6 +55,10 @@ class object_creator {
 
   [[nodiscard]] virtual std::unique_ptr<object_creator> copy()
       const noexcept = 0;
+
+  [[nodiscard]] virtual int suggested_precision_of(
+      const fractal_utils::wind_base& wind, int rows,
+      int cols) const noexcept = 0;
 };
 
 }  // namespace newton_fractal

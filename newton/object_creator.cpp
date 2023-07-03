@@ -353,6 +353,11 @@ class object_creator_by_prec
     return tl::make_unexpected(fmt::format(
         "Can not set precision. Precision is fixed at {}.", this->precision()));
   }
+
+  int suggested_precision_of(const fractal_utils::wind_base&, int,
+                             int) const noexcept final {
+    return prec;
+  }
 };
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -494,6 +499,13 @@ class object_creator_mpc
       }
     }
     return {};
+  }
+  static constexpr int min_precision = 50;
+  int suggested_precision_of(const fractal_utils::wind_base& _wind, int rows,
+                             int cols) const noexcept final {
+    const auto& wind = dynamic_cast<const fu::center_wind<real_type>&>(_wind);
+    return std::min<int>(min_precision,
+                         fu::required_precision_of(wind, rows, cols));
   }
 };
 

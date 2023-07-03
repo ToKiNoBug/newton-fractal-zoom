@@ -38,6 +38,13 @@ void newton_zoomer::compute(const fu::wind_base &wind,
     const bool copy_success = wind.copy_to(ar.info().window());
     assert(copy_success);
   }
+
+  if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
+    const int new_prec =
+        this->template_metadata().obj_creator()->suggested_precision_of(
+            wind, this->rows(), this->cols());
+    ar.info().set_precision(new_prec);
+  }
   ar.setup_matrix();
   {
     nf::newton_equation_base::compute_option opt{
