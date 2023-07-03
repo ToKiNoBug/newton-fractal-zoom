@@ -370,6 +370,24 @@ auto newton_equation_mpc::compute_single(complex_type& z, int iteration_times,
                         mpfr_get_d(mpc_imagref(min_diff_data), MPFR_RNDN)}};
 }
 
+tl::expected<std::unique_ptr<newton_equation_mpc>, std::string>
+newton_equation_mpc::create_another_with_precision(int p) const noexcept {
+  if (p <= 0) {
+    return tl::make_unexpected(fmt::format("Invalid precision: {}", p));
+  }
+  std::unique_ptr<newton_equation_mpc> ret{new newton_equation_mpc{p}};
+
+  complex_type temp{0, p};
+  ret->_points.reserve(this->order());
+  ret->_parameters.reserve(this->order());
+  for (const auto& point : this->_points) {
+    mpc_set(temp.backend().data(), point.backend().data(), MPC_RNDNN);
+    ret->add_point(temp);
+  }
+
+  return ret;
+}
+
 /*
 auto newton_equation_mpc::compute_single(std::any& z_any,
                                          int iteration_times) const noexcept

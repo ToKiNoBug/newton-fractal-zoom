@@ -41,6 +41,11 @@ class object_creator {
   [[nodiscard]] virtual tl::expected<void, std::string> set_precision(
       newton_equation_base&) const noexcept = 0;
 
+  [[nodiscard]] virtual tl::expected<std::unique_ptr<newton_equation_base>,
+                                     std::string>
+  clone_with_precision(const newton_equation_base& src,
+                       int precision) const noexcept = 0;
+
   [[nodiscard]] virtual tl::expected<njson, std::string> save_window(
       const fractal_utils::wind_base& wb) const noexcept = 0;
 

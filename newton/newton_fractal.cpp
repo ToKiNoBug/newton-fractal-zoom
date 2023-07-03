@@ -58,6 +58,49 @@ void meta_data::set_precision(int precision) & noexcept {
   }
 }
 
+tl::expected<meta_data, std::string> meta_data::clone_with_precision(
+    int precision) const noexcept {
+  meta_data ret;
+  ret.rows = this->rows;
+  ret.cols = this->cols;
+  ret.iteration = this->iteration;
+
+  if (this->compute_objs.index() == 1) {
+    non_compute_info temp = std::get<1>(this->compute_objs);
+    temp.precision = precision;
+    ret.compute_objs = temp;
+  } else {
+    compute_objects temp;
+    temp.obj_creator = this->obj_creator()->copy();
+    temp.obj_creator->set_precision(precision);
+    temp.window.reset(this->window()->create_another());
+    const bool copy_success = this->window()->copy_to(temp.window.get());
+    if (!copy_success) {
+      return tl::make_unexpected(
+          "Failed to clone window, the floating type may be different.");
+    }
+    auto err = temp.obj_creator->set_precision(*temp.window);
+    if (!err.has_value()) {
+      return tl::make_unexpected(fmt::format(
+          "Failed to update precision of window, detail: {}", err.error()));
+    }
+    {
+      auto eq_temp = this->obj_creator()->clone_with_precision(
+          *this->equation(), precision);
+      if (!eq_temp.has_value()) {
+        return tl::make_unexpected(fmt::format(
+            "Failed to clone equation with precision = {}, detail: {}",
+            precision, eq_temp.error()));
+      }
+      temp.equation = std::move(eq_temp.value());
+    }
+
+    ret.compute_objs = std::move(temp);
+  }
+
+  return ret;
+}
+
 tl::expected<meta_data, std::string> load_metadata(
     std::string_view json, bool ignore_compute_objects) noexcept {
   njson nj;

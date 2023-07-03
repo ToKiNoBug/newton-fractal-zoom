@@ -358,6 +358,17 @@ class object_creator_by_prec
                              int) const noexcept final {
     return prec;
   }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+  clone_with_precision(const newton_equation_base& src,
+                       int p) const noexcept final {
+    if (p != this->precision()) {
+      return tl::make_unexpected(
+          "Invalid precision, you are calling clone_with_precision on a fixed "
+          "precision instance.");
+    }
+    return src.copy();
+  }
 };
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
@@ -507,6 +518,21 @@ class object_creator_mpc
     const auto& wind = dynamic_cast<const fu::center_wind<real_type>&>(_wind);
     return std::max<int>(min_precision,
                          fu::required_precision_of(wind, rows, cols));
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+  clone_with_precision(const newton_equation_base& _src,
+                       int p) const noexcept final {
+    auto* srcp = dynamic_cast<const newton_equation_mpc*>(&_src);
+    if (srcp == nullptr) {
+      return tl::make_unexpected("The floating point type mismatch.");
+    }
+
+    auto ret = srcp->create_another_with_precision(p);
+    if (ret.has_value()) {
+      return std::move(ret.value());
+    }
+    return tl::make_unexpected(std::move(ret.error()));
   }
 };
 

@@ -35,18 +35,36 @@ void newton_zoomer::compute(const fu::wind_base &wind,
 
   ar.info() = this->template_metadata();
 
-  {
-    const bool copy_success = wind.copy_to(ar.info().window());
-    assert(copy_success);
-  }
-
   if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
     const int new_prec =
         this->template_metadata().obj_creator()->suggested_precision_of(
             wind, this->rows(), this->cols());
-    ar.info().set_precision(new_prec);
+    {
+      auto temp = this->template_metadata().clone_with_precision(new_prec);
+      if (!temp.has_value()) {
+        QMessageBox::critical(
+            nullptr, "Failed to compute",
+            QString{
+                fmt::format(
+                    "Cannot update precision of metadata, clone_with_precision "
+                    "failed with following information: \n{}",
+                    temp.error())
+                    .data()});
+        exit(1);
+      }
+      ar.info() = std::move(temp.value());
+    }
     fmt::print("Current precision: {}\n", new_prec);
   }
+
+  {
+    const bool copy_success = wind.copy_to(ar.info().window());
+    assert(copy_success);
+    if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
+      ar.info().obj_creator()->set_precision(*ar.info().window());
+    }
+  }
+
   ar.setup_matrix();
   {
     nf::newton_equation_base::compute_option opt{

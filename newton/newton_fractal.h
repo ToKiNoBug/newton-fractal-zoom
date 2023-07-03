@@ -99,7 +99,10 @@ struct meta_data {
     return std::get<1>(this->compute_objs).backend;
   }
 
-  void set_precision(int precision) & noexcept;
+  [[deprecated]] void set_precision(int precision) & noexcept;
+
+  [[nodiscard]] tl::expected<meta_data, std::string> clone_with_precision(
+      int precision) const noexcept;
 };
 
 tl::expected<meta_data, std::string> load_metadata(

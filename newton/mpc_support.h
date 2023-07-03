@@ -82,6 +82,9 @@ class newton_equation_mpc
   void iterate_n(complex_type& z, int n, buffer_t& buf) const noexcept;
   void iterate_n(complex_type& z, int n) const noexcept;
 
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_mpc>, std::string>
+  create_another_with_precision(int prec) const noexcept;
+
   /*
   void iterate_n(std::any& z, int n) const noexcept {
     this->iterate_n(*std::any_cast<complex_type>(&z), n);
