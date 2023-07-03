@@ -6,11 +6,12 @@
 
 newton_zoomer::newton_zoomer(QWidget *parent)
     : fractal_utils::zoom_window{parent} {
-  this->set_label_widget(new newton_label{this});
-
   if (this->m_window_stack.empty()) {
     this->m_window_stack.emplace();
   }
+  this->set_label_widget(new newton_label{this});
+
+  this->set_frame_file_extensions("*.nfar;*.nfar.zst");
 }
 
 [[nodiscard]] std::unique_ptr<fu::wind_base> newton_zoomer::create_wind()
@@ -44,6 +45,7 @@ void newton_zoomer::compute(const fu::wind_base &wind,
         this->template_metadata().obj_creator()->suggested_precision_of(
             wind, this->rows(), this->cols());
     ar.info().set_precision(new_prec);
+    fmt::print("Current precision: {}\n", new_prec);
   }
   ar.setup_matrix();
   {
@@ -121,4 +123,23 @@ void newton_zoomer::set_template_metadata(
 
   this->refresh_range_display();
   this->refresh_image_display();
+}
+
+QString newton_zoomer::export_frame(QString _filename,
+                                    const fu::wind_base &wind,
+                                    fu::constant_view image_u8c3,
+                                    std::any &custom) const noexcept {
+  const std::string filename = _filename.toLocal8Bit().data();
+  auto *ar_ptr = std::any_cast<newton_fractal::newton_archive>(&custom);
+  if (ar_ptr == nullptr) {
+    return QStringLiteral(
+        "The passed std::any reference is not a newton_archive instance.");
+  }
+
+  auto err = ar_ptr->save(filename);
+  if (!err.has_value()) {
+    return QString::fromUtf8(err.error());
+  }
+
+  return {};
 }

@@ -44,9 +44,9 @@ class newton_zoomer final : public fractal_utils::zoom_window {
                   std::unique_ptr<fu::wind_base> &wind_unique_ptr,
                   std::string &err) const noexcept final;
 
-  //  QString export_frame(QString filename, const fu::wind_base &wind,
-  //                       fu::constant_view image_u8c3,
-  //                       std::any &custom) const noexcept final;
+  QString export_frame(QString filename, const fu::wind_base &wind,
+                       fu::constant_view image_u8c3,
+                       std::any &custom) const noexcept final;
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_ZOOMER_H

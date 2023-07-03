@@ -501,10 +501,11 @@ class object_creator_mpc
     return {};
   }
   static constexpr int min_precision = 50;
-  int suggested_precision_of(const fractal_utils::wind_base& _wind, int rows,
-                             int cols) const noexcept final {
+  [[nodiscard]] int suggested_precision_of(
+      const fractal_utils::wind_base& _wind, int rows,
+      int cols) const noexcept final {
     const auto& wind = dynamic_cast<const fu::center_wind<real_type>&>(_wind);
-    return std::min<int>(min_precision,
+    return std::max<int>(min_precision,
                          fu::required_precision_of(wind, rows, cols));
   }
 };

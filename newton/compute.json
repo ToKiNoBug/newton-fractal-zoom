@@ -21,15 +21,15 @@
       "precision": 2
     }
   ],
-  "backend": "standard",
-  "precision": 2,
+  "backend": "mpfr",
+  "precision": 50,
   "window": {
     "center": [
       0,
       0
     ],
     "x_span": 32,
-    "y_span": 18
+    "y_span": 27
   },
   "points": [
     [
@@ -45,7 +45,7 @@
       0
     ]
   ],
-  "rows": 480,
-  "cols": 720,
+  "rows": 360,
+  "cols": 540,
   "iteration": 100
 }
