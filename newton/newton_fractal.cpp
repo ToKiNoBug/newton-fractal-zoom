@@ -25,6 +25,26 @@ meta_data::meta_data(const meta_data& src) noexcept
   }
 }
 
+meta_data& meta_data::operator=(const meta_data& src) noexcept {
+  if (src.compute_objs.index() == 0) {
+    compute_objects temp{};
+    temp.obj_creator = src.obj_creator()->copy();
+    temp.window =
+        std::unique_ptr<fu::wind_base>(src.window()->create_another());
+    src.window()->copy_to(temp.window.get());
+    temp.equation = src.equation()->copy();
+
+    this->compute_objs = std::move(temp);
+  } else {
+    this->compute_objs = std::get<1>(src.compute_objs);
+  }
+
+  this->rows = src.rows;
+  this->cols = src.cols;
+  this->iteration = src.iteration;
+  return *this;
+}
+
 void meta_data::set_precision(int precision) & noexcept {
   if (this->compute_objs.index() == 0) {
     auto& info = std::get<0>(this->compute_objs);

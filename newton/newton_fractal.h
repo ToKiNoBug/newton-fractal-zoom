@@ -29,6 +29,13 @@
 namespace newton_fractal {
 
 struct meta_data {
+  meta_data() = default;
+  meta_data(meta_data&&) = default;
+  meta_data(const meta_data&) noexcept;
+
+  meta_data& operator=(meta_data&&) noexcept = default;
+  meta_data& operator=(const meta_data&) noexcept;
+
   struct compute_objects {
     std::unique_ptr<object_creator> obj_creator{nullptr};
     std::unique_ptr<fractal_utils::wind_base> window{nullptr};
@@ -50,12 +57,6 @@ struct meta_data {
   [[nodiscard]] inline bool can_compute() const noexcept {
     return this->compute_objs.index() == 0;
   }
-
-  meta_data() = default;
-  meta_data(meta_data&&) = default;
-  meta_data(const meta_data&) noexcept;
-
-  meta_data& operator=(meta_data&&) noexcept = default;
 
   [[nodiscard]] auto obj_creator() noexcept {
     return std::get<0>(this->compute_objs).obj_creator.get();
