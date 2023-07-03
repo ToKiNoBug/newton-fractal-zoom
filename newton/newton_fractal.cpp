@@ -3,6 +3,7 @@
 #include <magic_enum.hpp>
 #include <memory>
 #include <iterator>
+#include <fstream>
 
 namespace newton_fractal {
 
@@ -157,6 +158,16 @@ tl::expected<meta_data, std::string> load_metadata(
   }
 
   return ret;
+}
+
+tl::expected<meta_data, std::string> load_metadata_from_file(
+    std::string_view filename, bool ignore_compute_objects) noexcept {
+  std::ifstream ifs{filename.data()};
+  if (!ifs) {
+    return tl::make_unexpected(fmt::format("Failed to open file {}", filename));
+  }
+
+  return load_metadata(ifs, ignore_compute_objects);
 }
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {

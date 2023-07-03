@@ -60,7 +60,7 @@ struct render_config {
 
 tl::expected<render_config, std::string> load_render_config(
     std::istream &src) noexcept;
-tl::expected<render_config, std::string> load_render_config(
+tl::expected<render_config, std::string> load_render_config_from_file(
     std::string_view filename) noexcept;
 
 void serialize_render_config(const render_config &, std::string &ret) noexcept;

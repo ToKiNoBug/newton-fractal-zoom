@@ -108,6 +108,8 @@ tl::expected<meta_data, std::string> load_metadata(
     std::string_view json, bool ignore_compute_objects) noexcept;
 tl::expected<meta_data, std::string> load_metadata(
     std::istream& is, bool ignore_compute_objects) noexcept;
+tl::expected<meta_data, std::string> load_metadata_from_file(
+    std::string_view filename, bool ignore_compute_objects) noexcept;
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept;
 };  // namespace newton_fractal

@@ -140,7 +140,7 @@ tl::expected<render_config, std::string> load_render_config(
   }
 }
 
-tl::expected<render_config, std::string> load_render_config(
+tl::expected<render_config, std::string> load_render_config_from_file(
     std::string_view filename) noexcept {
   std::ifstream ifs{filename.data()};
   return load_render_config(ifs);

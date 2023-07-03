@@ -160,7 +160,7 @@ tl::expected<void, std::string> render_cpu(
   nf::render_config config;
   {
     auto render_config_opt =
-        nf::load_render_config(std::string_view{rt.render_config_filename});
+        nf::load_render_config_from_file(rt.render_config_filename);
     if (!render_config_opt.has_value()) {
       return tl::make_unexpected(render_config_opt.error());
     }
