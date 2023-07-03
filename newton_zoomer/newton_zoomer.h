@@ -47,6 +47,10 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   QString export_frame(QString filename, const fu::wind_base &wind,
                        fu::constant_view image_u8c3,
                        std::any &custom) const noexcept final;
+
+ public slots:
+
+  void received_wheel_move(std::array<int, 2> pos, bool is_scaling_up) final;
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_ZOOMER_H

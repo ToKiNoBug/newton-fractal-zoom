@@ -121,26 +121,27 @@ void newton_zoomer::set_template_metadata(
     newton_fractal::meta_data &&src) & noexcept {
   this->m_template_metadata = std::move(src);
 
-  while (!this->m_window_stack.empty()) {
-    this->m_window_stack.pop();
-  }
+  //  while (!this->m_window_stack.empty()) {
+  //    this->m_window_stack.pop();
+  //  }
+  //
+  //  this->m_window_stack.emplace(this->m_template_metadata.rows,
+  //                               this->m_template_metadata.cols, 0);
+  this->reset(this->template_metadata().rows, this->template_metadata().cols);
+  //  this->map_base = {(size_t)this->template_metadata().rows,
+  //                    (size_t)this->template_metadata().cols, 0};
 
-  this->m_window_stack.emplace(this->m_template_metadata.rows,
-                               this->m_template_metadata.cols, 0);
-  this->map_base = {(size_t)this->template_metadata().rows,
-                    (size_t)this->template_metadata().cols, 0};
-
-  {
-    this->current_result().wind.reset(
-        this->template_metadata().window()->create_another());
-
-    const bool copy_success = this->template_metadata().window()->copy_to(
-        this->current_result().wind.get());
-    assert(copy_success);
-  }
-
-  this->refresh_range_display();
-  this->refresh_image_display();
+  //  {
+  //    this->current_result().wind.reset(
+  //        this->template_metadata().window()->create_another());
+  //
+  //    const bool copy_success = this->template_metadata().window()->copy_to(
+  //        this->current_result().wind.get());
+  //    assert(copy_success);
+  //  }
+  //
+  //  this->refresh_range_display();
+  //  this->refresh_image_display();
 }
 
 QString newton_zoomer::export_frame(QString _filename,
@@ -160,4 +161,27 @@ QString newton_zoomer::export_frame(QString _filename,
   }
 
   return {};
+}
+
+void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
+                                        bool is_scaling_up) {
+  fu::zoom_window::received_wheel_move(pos, is_scaling_up);
+
+  if (!this->template_metadata().obj_creator()->is_fixed_precision()) {
+    auto &cur = this->current_result();
+    const int new_prec =
+        this->template_metadata().obj_creator()->suggested_precision_of(
+            *cur.wind, this->rows(), this->cols());
+    auto new_objc = this->template_metadata().obj_creator()->copy();
+    new_objc->set_precision(new_prec);
+    auto err = new_objc->set_precision(*cur.wind);
+    if (!err.has_value()) {
+      QMessageBox::critical(
+          this, "Failed to update precision for window",
+          QStringLiteral("object_creator::set_precision(fu::wind&) failed with "
+                         "following information:\n%1")
+              .arg(err.error().data()));
+      exit(1);
+    }
+  }
 }

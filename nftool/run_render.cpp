@@ -13,8 +13,7 @@ create_render_config_objects(const render_task& rt,
                              int archive_points) noexcept {
   nf::render_config render_config;
   {
-    auto temp =
-        nf::load_render_config(std::string_view{rt.render_config_filename});
+    auto temp = nf::load_render_config_from_file(rt.render_config_filename);
     if (!temp.has_value()) {
       return tl::make_unexpected(
           fmt::format("Failed to load render config from \"{}\", detail: {}.",

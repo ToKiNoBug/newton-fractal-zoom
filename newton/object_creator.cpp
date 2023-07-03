@@ -517,7 +517,7 @@ class object_creator_mpc
       int cols) const noexcept final {
     const auto& wind = dynamic_cast<const fu::center_wind<real_type>&>(_wind);
     return std::max<int>(min_precision,
-                         fu::required_precision_of(wind, rows, cols));
+                         fu::required_precision_of(wind, rows, cols) + 4);
   }
 
   [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>

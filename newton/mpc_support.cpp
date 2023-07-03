@@ -412,10 +412,30 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
       dynamic_cast<const fractal_utils::center_wind<boostmp::mpfr_float>&>(
           _wind);
 
+  //  {
+  //    int px = wind.x_span.precision();
+  //    assert(wind.x_span.precision() >= this->_precision);
+  //    int py = wind.y_span.precision();
+  //    assert(wind.y_span.precision() >= this->_precision);
+  //    int pc0 = wind.center[0].precision();
+  //    assert(wind.center[0].precision() >= this->_precision);
+  //    int pc1 = wind.center[1].precision();
+  //    assert(wind.center[1].precision() >= this->_precision);
+  //  }
+
+  //  fractal_utils::center_wind<boostmp::mpfr_float> wind;
+  //  wind_ref.copy_to(&wind);
+  //  {
+  //    wind.center[0].precision(this->_precision);
+  //    wind.center[1].precision(this->_precision);
+  //    wind.x_span.precision(this->_precision);
+  //    wind.y_span.precision(this->_precision);
+  //  }
+
   const auto left_top_corner = wind.left_top_corner();
 
-  const double ltc_0 = left_top_corner[0].convert_to<double>();
-  const double ltc_1 = left_top_corner[1].convert_to<double>();
+  //  const double ltc_0 = left_top_corner[0].convert_to<double>();
+  //  const double ltc_1 = left_top_corner[1].convert_to<double>();
 
   const real_type r0{left_top_corner[1], (uint32_t)this->_precision};
   const real_type c0{left_top_corner[0], (uint32_t)this->_precision};
@@ -423,8 +443,10 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                           (uint32_t)this->_precision};
   */
 
-  const boostmp::mpfr_float r_unit = -wind.y_span / rows;
-  const boostmp::mpfr_float c_unit = wind.x_span / cols;
+  boostmp::mpfr_float r_unit = -wind.y_span / rows;
+  r_unit.precision(this->_precision);
+  boostmp::mpfr_float c_unit = wind.x_span / cols;
+  c_unit.precision(this->_precision);
 
   auto compute_part_function = [](mpfr_srcptr unit, int idx, mpfr_srcptr offset,
                                   mpfr_ptr dest) {
