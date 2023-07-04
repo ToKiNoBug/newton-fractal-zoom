@@ -26,25 +26,39 @@ struct draw_option {
 };
 
 class draggable_label final : public QLabel {
+ private:
+  [[nodiscard]] newton_label* impl_parent_label() const noexcept;
+
  public:
   explicit draggable_label(QWidget* parent = nullptr);
   ~draggable_label() final = default;
 
   void draw() & noexcept;
-  int index{0};
-  draw_option option;
+  void draw(int index, const draw_option& option) & noexcept;
 
   std::optional<QPoint> point_before_drag{std::nullopt};
 
+  [[nodiscard]] std::optional<int> index() const noexcept;
+  [[nodiscard]] draw_option option() const noexcept;
+
+  [[nodiscard]] newton_label* parent_label() noexcept {
+    return this->impl_parent_label();
+  }
+  [[nodiscard]] const newton_label* parent_label() const noexcept {
+    return this->impl_parent_label();
+  }
+
  signals:
-  void dragged(draggable_label* self);
-  void released(draggable_label* self);
+  //  void dragged(draggable_label* self, QPoint pos);
+  //  void released(draggable_label* self);
 
  protected:
   void paintEvent(QPaintEvent* e) override;
 
   void mousePressEvent(QMouseEvent* e) override;
   void mouseMoveEvent(QMouseEvent* e) override;
+
+  // void dragMoveEvent(QDragMoveEvent* e) override;
 };
 
 struct dragged_option {
@@ -64,6 +78,7 @@ class newton_label final : public scalable_label {
   newton_zoomer* const m_zoomer;
 
  public:
+  draw_option option;
   explicit newton_label(newton_zoomer* parent);
 
   ~newton_label() final { this->m_points.clear(); }
@@ -71,13 +86,27 @@ class newton_label final : public scalable_label {
   [[nodiscard]] auto& points() noexcept { return this->m_points; }
   [[nodiscard]] const auto& points() const noexcept { return this->m_points; }
 
-  void repaint_points() & noexcept;
+  void repaint_point(const fractal_utils::wind_base& wind,
+                     draggable_label* label,
+                     std::complex<double> coordinate) const noexcept;
+
+  void repaint_point(const fractal_utils::wind_base& wind,
+                     size_t idx) & noexcept;
 
   [[nodiscard]] newton_zoomer* zoomer() const noexcept;
 
   void reset(const nf::newton_equation_base& equation) & noexcept;
 
-  void refresh_points(const fractal_utils::wind_base& wind) & noexcept;
+  void repaint_points(const fractal_utils::wind_base& wind) & noexcept;
+
+  [[nodiscard]] draggable_label* extract_draggable_label(
+      const QMimeData* src) const noexcept;
+
+  [[nodiscard]] std::optional<size_t> extract_index(
+      const QMimeData* src) const noexcept;
+
+  [[nodiscard]] std::optional<size_t> extract_index(
+      const draggable_label* ptr) const noexcept;
 
  protected:
   void mousePressEvent(QMouseEvent* e) override;
@@ -85,13 +114,7 @@ class newton_label final : public scalable_label {
   void dragEnterEvent(QDragEnterEvent* event) override;
 
   void dropEvent(QDropEvent* event) override;
-
- private:
-  [[nodiscard]] draggable_label* extract_draggable_label(
-      const QMimeData* src) const noexcept;
-
-  [[nodiscard]] std::optional<size_t> extract_index(
-      const QMimeData* src) const noexcept;
+  void dragMoveEvent(QDragMoveEvent* e) override;
 
  signals:
   void point_dragged(std::vector<std::complex<double>> new_points);

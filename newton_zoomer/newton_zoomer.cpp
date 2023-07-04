@@ -207,7 +207,7 @@ void newton_zoomer::refresh_range_display() & noexcept {
   zoom_window::refresh_range_display();
   auto lb = dynamic_cast<newton_label *>(this->label_widget());
   lb->reset(*this->template_metadata().equation());
-  lb->refresh_points(*this->current_result().wind);
+  lb->repaint_points(*this->current_result().wind);
 }
 
 void newton_zoomer::on_btn_revert_clicked() {
