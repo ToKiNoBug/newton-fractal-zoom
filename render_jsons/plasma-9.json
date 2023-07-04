@@ -7,128 +7,101 @@
   "point_methods": [
     {
       "hue": {
-        "range": 63,
-        "source": "magnitude"
+        "range": 63
       },
       "saturation": {
-        "range": 0.87,
-        "source": "magnitude"
+        "range": 0.87
       },
       "value": {
-        "range": 0.97,
-        "source": "magnitude"
+        "range": 0.97
       }
     },
     {
       "hue": {
-        "range": 45,
-        "source": "magnitude"
+        "range": 45
       },
       "saturation": {
-        "range": 0.85,
-        "source": "magnitude"
+        "range": 0.85
       },
       "value": {
-        "range": 0.99,
-        "source": "angle"
+        "range": 0.99
       }
     },
     {
       "hue": {
-        "range": 15,
-        "source": "magnitude"
+        "range": 15
       },
       "saturation": {
-        "range": 0.65,
-        "source": "magnitude"
+        "range": 0.65
       },
       "value": {
-        "range": 0.93,
-        "source": "angle"
+        "range": 0.93
       }
     },
     {
       "hue": {
-        "range": 325,
-        "source": "magnitude"
+        "range": 325
       },
       "saturation": {
-        "range": 0.71,
-        "source": "magnitude"
+        "range": 0.71
       },
       "value": {
-        "range": 0.74,
-        "source": "angle"
+        "range": 0.74
       }
     },
     {
       "hue": {
-        "range": 281,
-        "source": "magnitude"
+        "range": 281
       },
       "saturation": {
-        "range": 1,
-        "source": "magnitude"
+        "range": 1
       },
       "value": {
-        "range": 0.6,
-        "source": "angle"
+        "range": 0.6
       }
     },
     {
       "hue": {
-        "range": 242,
-        "source": "magnitude"
+        "range": 242
       },
       "saturation": {
-        "range": 0.95,
-        "source": "magnitude"
+        "range": 0.95
       },
       "value": {
-        "range": 0.53,
-        "source": "angle"
+        "range": 0.53
       }
     },
     {
       "hue": {
-        "range": 31,
-        "source": "magnitude"
+        "range": 31
       },
       "saturation": {
-        "range": 0.77,
-        "source": "magnitude"
+        "range": 0.77
       },
       "value": {
-        "range": 0.98,
-        "source": "angle"
+        "range": 0.98
       }
     },
     {
       "hue": {
-        "range": 350,
-        "source": "magnitude"
+        "range": 350
       },
       "saturation": {
-        "range": 0.6,
-        "source": "magnitude"
+        "range": 0.6
       },
       "value": {
-        "range": 0.84,
-        "source": "angle"
+        "range": 0.84
       }
     },
     {
       "hue": {
-        "range": 266,
-        "source": "magnitude"
+        "range": 266
       },
       "saturation": {
-        "range": 0.99,
-        "source": "magnitude"
+        "range": 0.99
       },
       "value": {
-        "range": 0.62,
-        "source": "angle"
+        "range": 0.62
       }
     }
   ]

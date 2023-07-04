@@ -12,6 +12,7 @@ namespace newton_fractal {
 tl::expected<render_config::render_method::color_value_mapping, std::string>
 parse_color_value_mapping(const njson &nj) noexcept {
   render_config::render_method::color_value_mapping cvm{};
+  bool is_range_single{false};
   try {
     const auto &range = nj.at("range");
 
@@ -23,11 +24,21 @@ parse_color_value_mapping(const njson &nj) noexcept {
       cvm.range[0] = range[0];
       cvm.range[1] = range[1];
     } else {
+      is_range_single = true;
       cvm.range[0] = range;
       cvm.range[1] = range;
     }
-
-    std::string src_str = nj.at("source");
+    std::string src_str;
+    if (!nj.contains("source")) {
+      if (!is_range_single) {
+        return tl::make_unexpected(
+            "The range is not fixed at a single value, so source can not be "
+            "omitted.");
+      }
+      src_str = "magnitude";
+    } else {
+      src_str = nj.at("source");
+    }
     auto source_opt =
         magic_enum::enum_cast<render_config::mapping_source>(src_str);
     if (!source_opt.has_value()) {

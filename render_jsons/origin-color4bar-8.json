@@ -4,133 +4,93 @@
     0,
     0
   ],
-  /*
-  ,{
-      "hue": {
-        "range":,
-        "source": "magnitude"
-      },
-      "saturation": {
-        "range":,
-        "source": "magnitude"
-      },
-      "value": {
-        "range":,
-        "source": "magnitude"
-      }
-    }
-  */
   "point_methods": [
     {
       "hue": {
-        "range": 29,
-        "source": "magnitude"
+        "range": 29
       },
       "saturation": {
-        "range": 0.4,
-        "source": "magnitude"
+        "range": 0.4
       },
       "value": {
-        "range": 0.99,
-        "source": "magnitude"
+        "range": 0.99
       }
     },
     {
       "hue": {
-        "range": 120,
-        "source": "magnitude"
+        "range": 120
       },
       "saturation": {
-        "range": 0.27,
-        "source": "magnitude"
+        "range": 0.27
       },
       "value": {
-        "range": 0.84,
-        "source": "magnitude"
+        "range": 0.84
       }
     },
     {
       "hue": {
-        "range": 267,
-        "source": "magnitude"
+        "range": 267
       },
       "saturation": {
-        "range": 0.17,
-        "source": "magnitude"
+        "range": 0.17
       },
       "value": {
-        "range": 0.84,
-        "source": "magnitude"
+        "range": 0.84
       }
     },
     {
       "hue": {
-        "range": 60,
-        "source": "magnitude"
+        "range": 60
       },
       "saturation": {
-        "range": 0.36,
-        "source": "magnitude"
+        "range": 0.36
       },
       "value": {
-        "range": 1,
-        "source": "magnitude"
+        "range": 1
       }
     },
     {
       "hue": {
-        "range": 218,
-        "source": "magnitude"
+        "range": 218
       },
       "saturation": {
-        "range": 0.37,
-        "source": "magnitude"
+        "range": 0.37
       },
       "value": {
-        "range": 0.95,
-        "source": "magnitude"
+        "range": 0.95
       }
     },
     {
       "hue": {
-        "range": 304,
-        "source": "magnitude"
+        "range": 304
       },
       "saturation": {
-        "range": 0.28,
-        "source": "magnitude"
+        "range": 0.28
       },
       "value": {
-        "range": 0.99,
-        "source": "magnitude"
+        "range": 0.99
       }
     },
     {
       "hue": {
-        "range": 68,
-        "source": "magnitude"
+        "range": 68
       },
       "saturation": {
-        "range": 0.21,
-        "source": "magnitude"
+        "range": 0.21
       },
       "value": {
-        "range": 0.72,
-        "source": "magnitude"
+        "range": 0.72
       }
     },
     {
       "hue": {
-        "range": 188,
-        "source": "magnitude"
+        "range": 188
       },
       "saturation": {
-        "range": 0.23,
-        "source": "magnitude"
+        "range": 0.23
       },
       "value": {
-        "range": 0.92,
-        "source": "magnitude"
+        "range": 0.92
       }
     }
   ]
