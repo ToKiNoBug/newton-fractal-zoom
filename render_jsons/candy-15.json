@@ -1,0 +1,219 @@
+{
+  "color_for_nan": [
+    0,
+    0,
+    0
+  ],
+  "point_methods": [
+    {
+      "hue": {
+        "range": 0,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 1,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.94,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 210,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.67,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.6,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 45,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.93,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.99,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 144,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.7,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.6,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 240,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.33,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.60,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 0,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.6,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 0,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.6,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 1,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 210,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.5,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.8,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 30,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 1,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.8,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 180,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.100,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.60,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 243,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.45,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.74,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 23,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.2,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.6,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 0,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.75,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.8,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 180,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 0.33,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.60,
+        "source": "magnitude"
+      }
+    },
+    {
+      "hue": {
+        "range": 45,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range": 1,
+        "source": "magnitude"
+      },
+      "value": {
+        "range": 0.8,
+        "source": "magnitude"
+      }
+    }
+  ]
+}
