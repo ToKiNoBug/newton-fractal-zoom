@@ -1,0 +1,67 @@
+{
+  "unused": [
+    {
+      "backend": "mpfr",
+      "precision": 71
+    },
+    {
+      "backend": "mpfr",
+      "precision": 147
+    },
+    {
+      "backend": "boost",
+      "precision": 8
+    },
+    {
+      "backend": "boost",
+      "precision": 16
+    },
+    {
+      "backend": "standard",
+      "precision": 2
+    }
+  ],
+  "backend": "standard",
+  "precision": 2,
+  "window": {
+    "center": [
+      0,
+      0
+    ],
+    "x_span": 16,
+    "y_span": 13.5
+  },
+  "points": [
+    [
+      -0.5,
+      0.8666666666666666
+    ],
+    [
+      -0.5,
+      -0.866666666666666
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      -2,
+      -2
+    ],
+    [
+      2,
+      -2
+    ],
+    [
+      -2,
+      2
+    ]
+  ],
+  "rows": 720,
+  "cols": 1080,
+  "iteration": 100
+}
