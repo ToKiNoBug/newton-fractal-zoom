@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(newton_fractal_zoom VERSION 0.0)
+project(newton_fractal_zoom VERSION 0.1)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -38,6 +38,8 @@ endif ()
 enable_language(CUDA)
 message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
 #set(CMAKE_CLANG)
+
+add_compile_definitions("NEWTON_FRACTAL_VERSION_STR=\"${PROJECT_VERSION}\"")
 
 add_subdirectory(newton)
 add_subdirectory(newton_archive)

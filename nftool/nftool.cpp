@@ -9,6 +9,7 @@
 
 int main(int argc, char** argv) {
   CLI::App capp;
+  capp.set_version_flag("--version", NEWTON_FRACTAL_VERSION_STR);
 
   auto compute = capp.add_subcommand("compute");
 

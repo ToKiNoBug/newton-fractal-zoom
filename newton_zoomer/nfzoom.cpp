@@ -17,19 +17,29 @@ int main(int argc, char** argv) {
   QApplication qapp{argc, argv};
 
   CLI::App capp;
+  capp.set_version_flag("--version", NEWTON_FRACTAL_VERSION_STR);
+
   std::string compute_src{"../compute_presets/double-p3.json"};
   std::string render_config{"../render_presets/plasma-9.json"};
   int scale{1};
   uint32_t threads{std::thread::hardware_concurrency()};
   bool auto_precision{false};
-  capp.add_option("source", compute_src)->check(CLI::ExistingFile);
-  capp.add_option("--rj,--render-json", render_config)
+  capp.add_option("source", compute_src, "The staring point of zooming")
       ->check(CLI::ExistingFile);
-  capp.add_option("-j,--threads", threads)
+  capp.add_option("--rj,--render-json", render_config,
+                  "The method of rendering")
+      ->check(CLI::ExistingFile);
+  capp.add_option("-j,--threads", threads, "Threads used to compute and render")
       ->default_val(std::thread::hardware_concurrency());
-  capp.add_option("--scale", scale)->default_val(1);
-  capp.add_flag("--auto-precision", auto_precision)->default_val(false);
-
+  capp.add_option("--scale", scale,
+                  "The scaling ratio that the image will be displayed")
+      ->default_val(1)
+      ->check(CLI::PositiveNumber);
+#ifdef NEWTON_FRACTAL_MPC_SUPPORT
+  capp.add_flag("--auto-precision", auto_precision,
+                "Change the precision automatically. Only available for mpfr.")
+      ->default_val(false);
+#endif
   CLI11_PARSE(capp, argc, argv);
 
   if (!can_be_file(compute_src)) {
