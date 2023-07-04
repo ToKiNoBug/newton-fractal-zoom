@@ -40,3 +40,11 @@ target_link_libraries(test_newton_render PRIVATE
         newton_render)
 target_include_directories(test_newton_render PRIVATE
         ${NF_cli11_include_dir})
+
+
+install(TARGETS newton_render
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
+file(GLOB render_json_files "${CMAKE_SOURCE_DIR}/render_jsons/*.json")
+install(FILES ${render_json_files} DESTINATION render_presets)

@@ -68,3 +68,5 @@ target_include_directories(test_metdainfo PRIVATE ${NF_cli11_include_dir})
 install(TARGETS newton_fractal
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
+file(GLOB compute_presets "${CMAKE_SOURCE_DIR}/compute_tasks/*.json")
+install(FILES ${compute_presets} DESTINATION compute_presets)

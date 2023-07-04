@@ -15,3 +15,5 @@ target_link_libraries(nfzoom PRIVATE
         fractal_utils::zoom_utils)
 target_include_directories(nfzoom PRIVATE
         ${NF_cli11_include_dir})
+
+install(TARGETS nfzoom RUNTIME DESTINATION bin)
