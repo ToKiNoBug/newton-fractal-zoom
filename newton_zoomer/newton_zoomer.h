@@ -28,6 +28,8 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   }
   void set_template_metadata(newton_fractal::meta_data &&src) & noexcept;
 
+  void refresh_range_display() & noexcept final;
+
  protected:
   [[nodiscard]] std::unique_ptr<fu::wind_base> create_wind()
       const noexcept final;
@@ -52,6 +54,9 @@ class newton_zoomer final : public fractal_utils::zoom_window {
  public slots:
 
   void received_wheel_move(std::array<int, 2> pos, bool is_scaling_up) final;
+
+  void on_btn_revert_clicked() final;
+  void on_btn_repaint_clicked() final;
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_ZOOMER_H

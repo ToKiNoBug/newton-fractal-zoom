@@ -13,9 +13,11 @@
 #include <zoom_window.h>
 #include <QEvent>
 #include <optional>
+#include <newton_fractal.h>
 
 class draggable_label;
 class newton_label;
+class newton_zoomer;
 
 struct draw_option {
   uint32_t background_color{0xFFFFFFFF};
@@ -59,21 +61,40 @@ class newton_label final : public scalable_label {
 
  private:
   std::vector<label_point_pair> m_points;
+  newton_zoomer* const m_zoomer;
 
  public:
-  explicit newton_label(fractal_utils::zoom_window* parent = nullptr)
-      : scalable_label(parent){};
-  ~newton_label() final { this->m_points.clear(); };
+  explicit newton_label(newton_zoomer* parent);
+
+  ~newton_label() final { this->m_points.clear(); }
 
   [[nodiscard]] auto& points() noexcept { return this->m_points; }
   [[nodiscard]] const auto& points() const noexcept { return this->m_points; }
 
   void repaint_points() & noexcept;
 
-  [[nodiscard]] fractal_utils::zoom_window* parent_wind() const noexcept;
+  [[nodiscard]] newton_zoomer* zoomer() const noexcept;
+
+  void reset(const nf::newton_equation_base& equation) & noexcept;
+
+  void refresh_points(const fractal_utils::wind_base& wind) & noexcept;
 
  protected:
   void mousePressEvent(QMouseEvent* e) override;
+
+  void dragEnterEvent(QDragEnterEvent* event) override;
+
+  void dropEvent(QDropEvent* event) override;
+
+ private:
+  [[nodiscard]] draggable_label* extract_draggable_label(
+      const QMimeData* src) const noexcept;
+
+  [[nodiscard]] std::optional<size_t> extract_index(
+      const QMimeData* src) const noexcept;
+
+ signals:
+  void point_dragged(std::vector<std::complex<double>> new_points);
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H

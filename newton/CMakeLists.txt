@@ -14,6 +14,12 @@ add_library(newton_fractal STATIC
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
+if (${MSVC})
+    target_compile_options(newton_fractal PRIVATE "/fp:fast")
+else ()
+    target_compile_options(newton_fractal PRIVATE "-Ofast")
+endif ()
+
 
 find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)

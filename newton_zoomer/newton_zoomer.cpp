@@ -11,6 +11,8 @@ newton_zoomer::newton_zoomer(QWidget *parent)
     this->m_window_stack.emplace();
   }
   this->set_label_widget(new newton_label{this});
+  this->label_widget()->setAutoFillBackground(true);
+  this->label_widget()->setScaledContents(true);
 
   this->set_frame_file_extensions("*.nfar;*.nfar.zst;;*.json");
 }
@@ -197,4 +199,22 @@ void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
     }
   }
   fu::zoom_window::received_wheel_move(pos, is_scaling_up);
+
+  fmt::print("size of stack: {}\n", this->m_window_stack.size());
+}
+
+void newton_zoomer::refresh_range_display() & noexcept {
+  zoom_window::refresh_range_display();
+  auto lb = dynamic_cast<newton_label *>(this->label_widget());
+  lb->reset(*this->template_metadata().equation());
+  lb->refresh_points(*this->current_result().wind);
+}
+
+void newton_zoomer::on_btn_revert_clicked() {
+  zoom_window::on_btn_revert_clicked();
+  fmt::print("size of stack: {}\n", this->m_window_stack.size());
+}
+void newton_zoomer::on_btn_repaint_clicked() {
+  zoom_window::on_btn_repaint_clicked();
+  fmt::print("size of stack: {}\n", this->m_window_stack.size());
 }
