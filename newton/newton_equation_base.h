@@ -31,6 +31,9 @@ class newton_equation_base {
   [[nodiscard]] virtual std::complex<double> point_at(
       int idx) const noexcept = 0;
 
+  virtual void reset(
+      std::span<const std::complex<double>> points) & noexcept = 0;
+
   /*
   virtual void iterate_n(std::any &z, int iteration_times) const noexcept = 0;
   */

@@ -493,3 +493,14 @@ void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
     }
   }
 }
+
+void newton_equation_mpc::reset(
+    std::span<const std::complex<double>> points) & noexcept {
+  this->clear();
+  for (auto& point : points) {
+    complex_type temp{points, this->_precision};
+    this->add_point(temp);
+  }
+
+  this->update_precision();
+}

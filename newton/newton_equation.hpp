@@ -394,6 +394,14 @@ class newton_equation : public newton_equation_base {
   }
 
  public:
+  void reset(std::span<const std::complex<double>> points) & noexcept override {
+    this->clear();
+    for (auto& point : points) {
+      complex_t temp{point};
+      this->add_point(temp);
+    }
+  }
+
   [[nodiscard]] njson::array_t to_json() const noexcept override {
     njson::array_t ret;
     ret.reserve(this->order());

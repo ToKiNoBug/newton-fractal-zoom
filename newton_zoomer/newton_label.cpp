@@ -264,6 +264,16 @@ void newton_label::dropEvent(QDropEvent* event) {
   event->acceptProposedAction();
 }
 
+std::vector<std::complex<double>> newton_label::current_points()
+    const noexcept {
+  std::vector<std::complex<double>> ret;
+  ret.reserve(this->m_points.size());
+  for (auto& p : this->m_points) {
+    ret.emplace_back(p.coordinate);
+  }
+  return ret;
+}
+
 void newton_label::dragMoveEvent(QDragMoveEvent* event) {
   const auto idx_opt = this->extract_index(event->mimeData());
   if (!idx_opt.has_value()) {
@@ -274,11 +284,16 @@ void newton_label::dragMoveEvent(QDragMoveEvent* event) {
 
   const auto& wind = *this->zoomer()->current_result().wind;
 
-  auto current_cplx = wind.displayed_coordinate({this->height(), this->width()},
-                                                {event_pos.y(), event_pos.x()});
+  auto current_coord = wind.displayed_coordinate(
+      {this->height(), this->width()}, {event_pos.y(), event_pos.x()});
+  std::complex<double> current_cplx{current_coord[0], current_coord[1]};
 
-  this->repaint_point(wind, this->m_points[idx].label.get(),
-                      std::complex<double>{current_cplx[0], current_cplx[1]});
+  this->repaint_point(wind, this->m_points[idx].label.get(), current_cplx);
+
+  auto points = this->current_points();
+  points[idx] = current_cplx;
+
+  this->zoomer()->update_equation(points);
 
   //    fmt::print("newton_label::dragMoveEvent: event_pos = [{}, {}]\n",
   //               event_pos.x(), event_pos.y());

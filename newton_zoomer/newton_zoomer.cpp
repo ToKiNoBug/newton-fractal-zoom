@@ -218,3 +218,12 @@ void newton_zoomer::on_btn_repaint_clicked() {
   zoom_window::on_btn_repaint_clicked();
   fmt::print("size of stack: {}\n", this->m_window_stack.size());
 }
+
+void newton_zoomer::update_equation(
+    std::span<const std::complex<double>> points) & noexcept {
+  this->template_metadata().equation()->reset(points);
+
+  this->compute_current();
+  this->render_current();
+  this->refresh_image_display();
+}

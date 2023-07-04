@@ -1,6 +1,9 @@
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 find_package(fractal_utils COMPONENTS zoom_utils REQUIRED)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 add_executable(nfzoom
         nfzoom.cpp
         newton_label.h

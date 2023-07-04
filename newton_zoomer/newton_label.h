@@ -67,6 +67,7 @@ struct dragged_option {
 };
 
 class newton_label final : public scalable_label {
+  // Q_OBJECT
  public:
   struct label_point_pair {
     std::unique_ptr<draggable_label> label{nullptr};
@@ -108,6 +109,9 @@ class newton_label final : public scalable_label {
   [[nodiscard]] std::optional<size_t> extract_index(
       const draggable_label* ptr) const noexcept;
 
+  [[nodiscard]] std::vector<std::complex<double>> current_points()
+      const noexcept;
+
  protected:
   void mousePressEvent(QMouseEvent* e) override;
 
@@ -115,9 +119,6 @@ class newton_label final : public scalable_label {
 
   void dropEvent(QDropEvent* event) override;
   void dragMoveEvent(QDragMoveEvent* e) override;
-
- signals:
-  void point_dragged(std::vector<std::complex<double>> new_points);
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H
