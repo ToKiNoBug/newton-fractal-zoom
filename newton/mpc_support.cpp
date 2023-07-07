@@ -498,7 +498,7 @@ void newton_equation_mpc::reset(
     std::span<const std::complex<double>> points) & noexcept {
   this->clear();
   for (auto& point : points) {
-    complex_type temp{points, this->_precision};
+    complex_type temp{point.real(), point.imag(), (uint32_t)this->_precision};
     this->add_point(temp);
   }
 
