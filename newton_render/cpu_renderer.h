@@ -14,6 +14,23 @@
 
 namespace newton_fractal {
 
+namespace internal {
+
+void set_data(fractal_utils::constant_view src,
+              std::optional<std::variant<fractal_utils::unique_map,
+                                         fractal_utils::constant_view>>& dst,
+              bool deep_copy) noexcept;
+
+[[nodiscard]] fractal_utils::constant_view get_map(
+    const std::optional<
+        std::variant<fractal_utils::unique_map, fractal_utils::constant_view>>&
+        src) noexcept;
+
+[[nodiscard]] uint8_t compute_max_nearest_index(
+    fractal_utils::constant_view has_value,
+    fractal_utils::constant_view nearest_index) noexcept;
+}  // namespace internal
+
 class cpu_renderer {
  private:
   fractal_utils::unique_map m_map_norm_arg;
@@ -54,17 +71,16 @@ class cpu_renderer {
 
   void reset() & noexcept;
 
-  void render(const render_config& config,
-              fractal_utils::constant_view map_has_value,
-              fractal_utils::constant_view map_nearest_idx,
-              fractal_utils::constant_view map_complex_difference,
-              fractal_utils::map_view image_u8c3, int skip_rows,
-              int skip_cols) & noexcept;
+  [[deprecated]] void render(
+      const render_config& config, fractal_utils::constant_view map_has_value,
+      fractal_utils::constant_view map_nearest_idx,
+      fractal_utils::constant_view map_complex_difference,
+      fractal_utils::map_view image_u8c3, int skip_rows,
+      int skip_cols) & noexcept;
 
-  tl::expected<void, std::string> render(const render_config& config,
-                                         fractal_utils::map_view image_u8c3,
-                                         int skip_rows,
-                                         int skip_cols) const noexcept;
+  [[nodiscard]] tl::expected<void, std::string> render(
+      const render_config& config, fractal_utils::map_view image_u8c3,
+      int skip_rows, int skip_cols) const noexcept;
 
   //  [[nodiscard]] inline auto rows() const noexcept {
   //    return this->m_map_norm_arg.rows();

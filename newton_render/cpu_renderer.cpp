@@ -4,6 +4,10 @@
 #include "gpu_interface.h"
 #include <fmt/format.h>
 
+namespace newton_fractal {
+
+namespace internal {
+
 void set_data(fractal_utils::constant_view src,
               std::optional<std::variant<fractal_utils::unique_map,
                                          fractal_utils::constant_view>> &dst,
@@ -34,7 +38,23 @@ fractal_utils::constant_view get_map(
       src.value());
 }
 
-namespace newton_fractal {
+[[nodiscard]] uint8_t compute_max_nearest_index(
+    fractal_utils::constant_view has_value,
+    fractal_utils::constant_view nearest_index) noexcept {
+  assert(has_value.rows() == nearest_index.rows());
+  assert(has_value.cols() == nearest_index.cols());
+
+  uint8_t max{0};
+  for (size_t idx = 0; idx < nearest_index.size(); idx++) {
+    if (!has_value.at<uint8_t>(idx)) {
+      continue;
+    }
+    max = std::max(max, nearest_index.at<uint8_t>(idx));
+  }
+  return max;
+}
+
+}  // namespace internal
 
 void cpu_renderer::set_data(fractal_utils::constant_view has_value,
                             fractal_utils::constant_view nearest_idx,
@@ -44,9 +64,9 @@ void cpu_renderer::set_data(fractal_utils::constant_view has_value,
   assert(nearest_idx.rows() == complex_difference.rows());
   assert(has_value.cols() == nearest_idx.cols());
   assert(nearest_idx.cols() == complex_difference.cols());
-  ::set_data(has_value, this->m_has_value, deep_copy);
-  ::set_data(nearest_idx, this->m_nearest_idx, deep_copy);
-  ::set_data(complex_difference, this->m_complex_difference, deep_copy);
+  internal::set_data(has_value, this->m_has_value, deep_copy);
+  internal::set_data(nearest_idx, this->m_nearest_idx, deep_copy);
+  internal::set_data(complex_difference, this->m_complex_difference, deep_copy);
   this->compute_norm_arg();
   this->compute_nearest_idx_max();
 }
@@ -66,23 +86,22 @@ void cpu_renderer::set_data(
 }
 
 void cpu_renderer::compute_nearest_idx_max() & noexcept {
-  uint8_t max{0};
-  auto mat = get_map(this->m_nearest_idx);
-  for (size_t idx = 0; idx < mat.size(); idx++) {
-    max = std::max(max, mat.at<uint8_t>(idx));
-  }
-  this->m_nearest_idx_max = max;
+  this->m_nearest_idx_max = internal::compute_max_nearest_index(
+      internal::get_map(this->m_has_value),
+      internal::get_map(this->m_nearest_idx));
 }
 
 void cpu_renderer::compute_norm_arg() & noexcept {
   this->m_map_norm_arg.reset(this->rows(), this->cols(),
                              sizeof(std::complex<double>));
 
-  for (size_t i = 0; i < get_map(this->m_complex_difference).size(); i++) {
-    if (!get_map(this->m_has_value).at<bool>(i)) {
+  for (size_t i = 0; i < internal::get_map(this->m_complex_difference).size();
+       i++) {
+    if (!internal::get_map(this->m_has_value).at<bool>(i)) {
       continue;
     }
-    auto cplx = get_map(this->m_complex_difference).at<std::complex<double>>(i);
+    auto cplx = internal::get_map(this->m_complex_difference)
+                    .at<std::complex<double>>(i);
     const double norm = std::abs(cplx);
     const double arg = std::arg(cplx);
     this->m_map_norm_arg.at<std::complex<double>>(i) = {norm, arg};
@@ -116,7 +135,7 @@ tl::expected<void, std::string> cpu_renderer::render(
     int64_t processed_count = 0;
     for (int r = skip_rows; r < this->rows() - skip_rows; r++) {
       for (int c = skip_cols; c < this->cols() - skip_cols; c++) {
-        if (!get_map(m_has_value).at<bool>(r, c)) {
+        if (!internal::get_map(m_has_value).at<bool>(r, c)) {
           continue;
         }
         const auto norm_arg =
@@ -144,8 +163,8 @@ tl::expected<void, std::string> cpu_renderer::render(
       const double arg = norm_arg.imag();
 
       image_u8c3.at<fractal_utils::pixel_RGB>(r, c) = render_cpu(
-          config, get_map(this->m_has_value).at<bool>(r, c),
-          get_map(m_nearest_idx).at<uint8_t>(r, c),
+          config, internal::get_map(this->m_has_value).at<bool>(r, c),
+          internal::get_map(m_nearest_idx).at<uint8_t>(r, c),
           (float)mag_opt.normalize(mag), (float)arg_opt.normalize(arg));
     }
   }

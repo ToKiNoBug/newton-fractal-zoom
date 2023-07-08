@@ -8,6 +8,8 @@
 #include <exception>
 #include <thrust/universal_allocator.h>
 #include <limits>
+#include <variant>
+#include "cpu_renderer.h"
 
 namespace newton_fractal {
 
@@ -101,6 +103,12 @@ class gpu_render_impl : public gpu_render {
 
   std::unique_ptr<CUstream_st, cuda_stream_deleter> m_stream{nullptr};
 
+  std::optional<
+      std::variant<fractal_utils::unique_map, fractal_utils::constant_view>>
+      m_has_value_host{std::nullopt};
+  std::optional<uint8_t> m_nearest_index_max{std::nullopt};
+  // std::optional<std::pair<int, int>> m_size_rc{std::nullopt};
+
   template <typename T>
   void copy_to_device(
       fu::constant_view src,
@@ -163,6 +171,16 @@ class gpu_render_impl : public gpu_render {
  public:
   explicit gpu_render_impl(int size);
 
+  [[nodiscard]] tl::expected<void, std::string> set_data(
+      fractal_utils::constant_view has_value,
+      fractal_utils::constant_view nearest_index,
+      fractal_utils::constant_view map_complex_difference,
+      bool deep_copy) & noexcept final;
+
+  [[nodiscard]] tl::expected<fractal_utils::constant_view, std::string> render(
+      const render_config_gpu_interface& config, int skip_rows,
+      int skip_cols) & noexcept final;
+
   [[nodiscard]] tl::expected<void, std::string> render(
       const render_config_gpu_interface& config, fu::constant_view has_value,
       fu::constant_view nearest_index, fu::constant_view complex_difference,
@@ -215,10 +233,11 @@ __global__ void render_image(
     fu::pixel_RGB color_nan, const render_config::render_method* methods,
     int rows, int cols, int skip_rows, int skip_cols);
 
-tl::expected<void, std::string> gpu_render_impl::render(
-    const render_config_gpu_interface& config, fu::constant_view has_value,
-    fu::constant_view nearest_index, fu::constant_view complex_difference,
-    fu::map_view image_u8c3, int skip_rows, int skip_cols) & noexcept {
+tl::expected<void, std::string> gpu_render_impl::set_data(
+    fractal_utils::constant_view has_value,
+    fractal_utils::constant_view nearest_index,
+    fractal_utils::constant_view complex_difference,
+    bool deep_copy) & noexcept {
   if (has_value.rows() != nearest_index.rows() ||
       has_value.cols() != nearest_index.cols()) {
     return tl::make_unexpected(
@@ -228,26 +247,6 @@ tl::expected<void, std::string> gpu_render_impl::render(
       nearest_index.cols() != complex_difference.cols()) {
     return tl::make_unexpected(
         "The matrix size of nearest_index and complex_difference mismatch.");
-  }
-  if (image_u8c3.rows() != complex_difference.rows() ||
-      image_u8c3.cols() != complex_difference.cols()) {
-    return tl::make_unexpected(
-        "The matrix size of image_u8c3 and complex_difference mismatch.");
-  }
-
-  // check if the render config is large enough
-  {
-    uint8_t max_nearest_idx = 0;
-    for (size_t idx = 0; idx < nearest_index.size(); idx++) {
-      max_nearest_idx =
-          std::max(nearest_index.at<uint8_t>(idx), max_nearest_idx);
-    }
-    if (max_nearest_idx >= config.num_methods()) {
-      return tl::make_unexpected(
-          "max_nearest_idx is " + std::to_string((int)max_nearest_idx) +
-          ", but the render config contains only " +
-          std::to_string(config.num_methods()) + " elements");
-    }
   }
 
   const int rows = has_value.rows();
@@ -260,12 +259,13 @@ tl::expected<void, std::string> gpu_render_impl::render(
   const int global_required_blocks = global_required_threads / warp_size;
   assert(global_required_threads % warp_size == 0);
 
-  const int size = (rows - 2 * skip_rows) * (cols - 2 * skip_cols);
-  const int required_threads = ceil_up_to(size, warp_size);
-  const int required_blocks = required_threads / warp_size;
-  assert(required_threads % warp_size == 0);
-
   try {
+    // this->m_size_rc = {rows, cols};
+    this->m_nearest_index_max =
+        internal::compute_max_nearest_index(has_value, nearest_index);
+
+    internal::set_data(has_value, this->m_has_value_host, deep_copy);
+
     this->copy_to_device(has_value, this->m_has_value);
     this->copy_to_device(nearest_index, this->m_nearest_index);
     this->copy_to_device(complex_difference, this->m_mag_arg);
@@ -274,30 +274,89 @@ tl::expected<void, std::string> gpu_render_impl::render(
                            this->m_stream.get()>>>(
         this->m_mag_arg.data().get(), this->m_has_value.data().get(), rows,
         cols);
-
     this->load_to_pinned_buffer(this->m_mag_arg, this->m_pinned_buffer);
+  } catch (std::exception& e) {
+    return tl::make_unexpected(e.what());
+  }
+  return {};
+
+  //  if (image_u8c3.rows() != complex_difference.rows() ||
+  //      image_u8c3.cols() != complex_difference.cols()) {
+  //    return tl::make_unexpected(
+  //        "The matrix size of image_u8c3 and complex_difference mismatch.");
+  //  }
+}
+
+[[nodiscard]] tl::expected<fractal_utils::constant_view, std::string>
+gpu_render_impl::render(const render_config_gpu_interface& config,
+                        int skip_rows, int skip_cols) & noexcept {
+  try {
+    const size_t rows = internal::get_map(this->m_has_value_host).rows();
+    const size_t cols = internal::get_map(this->m_has_value_host).cols();
+    const size_t global_size = internal::get_map(this->m_has_value_host).size();
+
+    constexpr size_t warp_size = 32;
+    const size_t size = (rows - 2 * skip_rows) * (cols - 2 * skip_cols);
+    const size_t required_threads = ceil_up_to(size, warp_size);
+    const size_t required_blocks = required_threads / warp_size;
+    assert(required_threads % warp_size == 0);
+
     // compute the range
     normalizer mag, arg;
     {
       fu::constant_view cv_mag_arg{
           (const void*)this->m_pinned_buffer.data().get(), (size_t)rows,
           (size_t)cols, sizeof(std::complex<double>)};
-      find_min_max(has_value, cv_mag_arg, skip_rows, skip_cols, mag, arg);
+      find_min_max(internal::get_map(this->m_has_value_host), cv_mag_arg,
+                   skip_rows, skip_cols, mag, arg);
     }
+
     this->m_image.resize(global_size);
     render_image<<<required_blocks, warp_size, 0, this->m_stream.get()>>>(
         this->m_has_value.data().get(), this->m_nearest_index.data().get(),
         this->m_mag_arg.data().get(), this->m_image.data().get(), mag, arg,
         config.color_for_nan(), config.method_ptr(), rows, cols, skip_rows,
         skip_cols);
+    this->load_to_pinned_buffer(this->m_image, this->m_pinned_buffer_image);
 
-    this->copy_to_host(
-        this->m_image, this->m_pinned_buffer_image,
-        {image_u8c3.address<fu::pixel_RGB>(0), image_u8c3.size()});
-
+    return fu::constant_view{
+        (const void*)this->m_pinned_buffer_image.data().get(), rows, cols,
+        sizeof(fu::pixel_RGB)};
   } catch (std::exception& e) {
     return tl::make_unexpected(e.what());
   }
+}
+
+tl::expected<void, std::string> gpu_render_impl::render(
+    const render_config_gpu_interface& config, fu::constant_view has_value,
+    fu::constant_view nearest_index, fu::constant_view complex_difference,
+    fu::map_view image_u8c3, int skip_rows, int skip_cols) & noexcept {
+  auto err =
+      this->set_data(has_value, nearest_index, complex_difference, false);
+  if (!err) {
+    return tl::make_unexpected(err.error());
+  }
+  err = gpu_render::render(config, image_u8c3, skip_rows, skip_cols);
+  if (!err) {
+    return tl::make_unexpected(err.error());
+  }
+  return {};
+}
+
+tl::expected<void, std::string> gpu_render::render(
+    const render_config_gpu_interface& config,
+    fractal_utils::map_view image_u8c3, int skip_rows,
+    int skip_cols) & noexcept {
+  auto result = this->render(config, skip_rows, skip_cols);
+  if (!result) {
+    return tl::make_unexpected(result.error());
+  }
+
+  if (image_u8c3 != result.value()) {
+    return tl::make_unexpected(
+        "The size of image_u8c3 mismatch with other given matrices.");
+  }
+  memcpy(image_u8c3.data(), result.value().data(), result.value().bytes());
   return {};
 }
 

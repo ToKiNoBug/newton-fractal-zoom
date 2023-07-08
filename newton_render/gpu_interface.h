@@ -57,10 +57,25 @@ class gpu_render {
 
   //[[nodiscard]] virtual int error_code() const noexcept = 0;
 
+  [[nodiscard]] virtual tl::expected<void, std::string> set_data(
+      fractal_utils::constant_view has_value,
+      fractal_utils::constant_view map_nearest_idx,
+      fractal_utils::constant_view map_complex_difference,
+      bool deep_copy) & noexcept = 0;
+
   [[nodiscard]] virtual tl::expected<void, std::string> render(
       const render_config_gpu_interface &config, fu::constant_view has_value,
       fu::constant_view nearest_index, fu::constant_view complex_difference,
       fu::map_view image_u8c3, int skip_rows, int skip_cols) & noexcept = 0;
+
+  [[nodiscard]] virtual tl::expected<fractal_utils::constant_view, std::string>
+  render(const render_config_gpu_interface &config, int skip_rows,
+         int skip_cols) & noexcept = 0;
+
+  [[nodiscard]] tl::expected<void, std::string> render(
+      const render_config_gpu_interface &config,
+      fractal_utils::map_view image_u8c3, int skip_rows,
+      int skip_cols) & noexcept;
 };
 
 NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(
