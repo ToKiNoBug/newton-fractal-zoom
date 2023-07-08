@@ -19,11 +19,11 @@ include(cmake/configure_3rdParty.cmake)
 find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)
 find_package(fractal_utils 2.3.18 COMPONENTS
-        core_utils
-        png_utils
-        multiprecision_utils
-        render_utils
-        REQUIRED)
+    core_utils
+    png_utils
+    multiprecision_utils
+    render_utils
+    REQUIRED)
 find_package(tl-expected REQUIRED)
 
 
@@ -52,5 +52,6 @@ add_subdirectory(newton_archive)
 add_subdirectory(newton_render)
 add_subdirectory(nftool)
 add_subdirectory(newton_zoomer)
+add_subdirectory(nfvideo)
 
 include(CPack)
