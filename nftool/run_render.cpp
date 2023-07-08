@@ -107,11 +107,11 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
   for (int r = rt.skip_rows; r < src->info().rows - rt.skip_rows; r++) {
     row_ptrs.emplace_back(image_u8c3.address<fu::pixel_RGB>(r, rt.skip_cols));
   }
-  fmt::print("row_ptrs = [");
-  for (auto ptr : row_ptrs) {
-    fmt::print("{}, ", ptr);
-  }
-  fmt::print("]\n");
+  //  fmt::print("row_ptrs = [");
+  //  for (auto ptr : row_ptrs) {
+  //    fmt::print("{}, ", ptr);
+  //  }
+  //  fmt::print("]\n");
 
   if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
                      row_ptrs.data(), src->info().rows - 2 * rt.skip_rows,
@@ -179,13 +179,21 @@ tl::expected<void, std::string> render_cpu(
     config = std::move(render_config_opt.value());
   }
 
+  nf::cpu_renderer renderer;
+  renderer.set_data(ar.map_has_result(), ar.map_nearest_point_idx(),
+                    ar.map_complex_difference(), false);
+
   // fu::unique_map image_u8c3{(size_t)ar.info().rows, (size_t)ar.info().cols,
   // 3};
   image_u8c3.reset((size_t)ar.info().rows, (size_t)ar.info().cols, 3);
+  auto err = renderer.render(config, image_u8c3, rt.skip_rows, rt.skip_cols);
+  if (!err) {
+    return tl::make_unexpected(
+        fmt::format("renderer.render failed because {}", err.error()));
+  }
 
-  nf::cpu_renderer renderer;
-  renderer.render(config, ar.map_has_result(), ar.map_nearest_point_idx(),
-                  ar.map_complex_difference(), image_u8c3, 0, 0);
+  //  renderer.render(config, ar.map_has_result(), ar.map_nearest_point_idx(),
+  //                  ar.map_complex_difference(), image_u8c3, 0, 0);
 
   return {};
 }
