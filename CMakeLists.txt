@@ -4,7 +4,9 @@ project(newton_fractal_zoom VERSION 0.1)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (${MSVC})
-    set(CMAKE_CXX_FLAGS "/EHsc")
+    #list(APPEND CMAKE_CXX_FLAGS)
+    set(CMAKE_CXX_FLAGS "/EHsc /wd4819")
+
     #add_compile_options()
 endif ()
 
@@ -17,11 +19,11 @@ include(cmake/configure_3rdParty.cmake)
 find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)
 find_package(fractal_utils 2.3.15 COMPONENTS
-        core_utils
-        png_utils
-        multiprecision_utils
-        render_utils
-        REQUIRED)
+    core_utils
+    png_utils
+    multiprecision_utils
+    render_utils
+    REQUIRED)
 find_package(tl-expected REQUIRED)
 
 
@@ -37,6 +39,10 @@ endif ()
 #endif ()
 enable_language(CUDA)
 message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
+set(CMAKE_CUDA_STANDARD 20)
+if (${MSVC})
+    set(CMAKE_CUDA_FLAGS "/wd4819")
+endif ()
 #set(CMAKE_CLANG)
 
 add_compile_definitions("NEWTON_FRACTAL_VERSION_STR=\"${PROJECT_VERSION}\"")
