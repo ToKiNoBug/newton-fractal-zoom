@@ -20,7 +20,7 @@ namespace newton_fractal {
 
 constexpr int warp_size = 64;
 
-class gpu_implementation : public gpu_interface {
+class gpu_implementation : public gpu_interface_no_use {
  private:
   internal::unique_cu_ptr<bool> m_has_value{nullptr};
   internal::unique_cu_ptr<uint8_t> m_nearest_index{nullptr};
@@ -140,8 +140,8 @@ nf::gpu_implementation::gpu_implementation(int _r, int _c)
   }
 }
 
-tl::expected<std::unique_ptr<nf::gpu_interface>, std::string>
-nf::gpu_interface::create(int rows, int cols) noexcept {
+tl::expected<std::unique_ptr<nf::gpu_interface_no_use>, std::string>
+nf::gpu_interface_no_use::create(int rows, int cols) noexcept {
   auto ret = std::make_unique<nf::gpu_implementation>(rows, cols);
   if (!ret->ok()) {
     return tl::make_unexpected(

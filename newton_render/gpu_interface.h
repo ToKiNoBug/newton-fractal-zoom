@@ -19,6 +19,8 @@
 #include "render_config.h"
 #include "NF_cuda_macros.hpp"
 
+namespace fu = fractal_utils;
+
 namespace newton_fractal {
 
 class render_config_gpu_interface {
@@ -34,8 +36,8 @@ class render_config_gpu_interface {
       const noexcept = 0;
   [[nodiscard]] virtual int num_methods() const noexcept = 0;
 
-  [[nodiscard]] virtual bool ok() const noexcept = 0;
-  [[nodiscard]] virtual int error_code() const noexcept = 0;
+  //[[nodiscard]] virtual bool ok() const noexcept = 0;
+  //[[nodiscard]] virtual int error_code() const noexcept = 0;
 
   [[nodiscard]] virtual fractal_utils::pixel_RGB color_for_nan()
       const noexcept = 0;
@@ -45,51 +47,20 @@ class render_config_gpu_interface {
   create() noexcept;
 };
 
-class gpu_interface {
+class gpu_render {
  public:
-  virtual ~gpu_interface() = default;
-
-  [[nodiscard]] virtual int rows() const noexcept = 0;
-  [[nodiscard]] virtual int cols() const noexcept = 0;
-  [[nodiscard]] inline int size() const noexcept {
-    return this->rows() * this->cols();
-  }
-
-  [[nodiscard]] virtual bool ok() const noexcept = 0;
-
-  [[nodiscard]] virtual int error_code() const noexcept = 0;
-
-  [[nodiscard]] virtual tl::expected<void, std::string> set_has_value(
-      std::span<const bool> src) & noexcept = 0;
-  [[nodiscard]] tl::expected<void, std::string> set_has_value(
-      fractal_utils::constant_view src) & noexcept {
-    return this->set_has_value({src.address<bool>(0), src.size()});
-  }
-  [[nodiscard]] virtual tl::expected<void, std::string> set_nearest_index(
-      std::span<const uint8_t> src) & noexcept = 0;
-  [[nodiscard]] tl::expected<void, std::string> set_nearest_index(
-      fractal_utils::constant_view src) & noexcept {
-    return this->set_nearest_index({src.address<uint8_t>(0), src.size()});
-  }
-  [[nodiscard]] virtual tl::expected<void, std::string> set_complex_difference(
-      std::span<const std::complex<double>> src) & noexcept = 0;
-  [[nodiscard]] tl::expected<void, std::string> set_complex_difference(
-      fractal_utils::constant_view src) & noexcept {
-    return this->set_complex_difference(
-        {src.address<std::complex<double>>(0), src.size()});
-  }
-
-  [[nodiscard]] static tl::expected<std::unique_ptr<gpu_interface>, std::string>
+  [[nodiscard]] static tl::expected<std::unique_ptr<gpu_render>, std::string>
   create(int rows, int cols) noexcept;
+  virtual ~gpu_render() = default;
 
-  [[nodiscard]] virtual tl::expected<void, std::string> run(
-      const render_config_gpu_interface &config, int skip_rows, int skip_cols,
-      bool sync) & noexcept = 0;
+  //[[nodiscard]] virtual bool ok() const noexcept = 0;
 
-  [[nodiscard]] virtual tl::expected<void, std::string> get_pixels(
-      fractal_utils::map_view image_u8c3) & noexcept = 0;
+  //[[nodiscard]] virtual int error_code() const noexcept = 0;
 
-  virtual void wait_for_finished() & noexcept(false) = 0;
+  [[nodiscard]] virtual tl::expected<void, std::string> render(
+      const render_config_gpu_interface &config, fu::constant_view has_value,
+      fu::constant_view nearest_index, fu::constant_view complex_difference,
+      fu::map_view image_u8c3, int skip_rows, int skip_cols) & noexcept = 0;
 };
 
 NF_HOST_DEVICE_FUN inline fractal_utils::pixel_RGB render(

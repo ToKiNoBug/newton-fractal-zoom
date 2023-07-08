@@ -113,9 +113,10 @@ tl::expected<void, std::string> render_gpu(
                    render_option_objects.value().second->config().value()));
   }
 
-  std::unique_ptr<nf::gpu_interface> gi{nullptr};
+  std::unique_ptr<nf::gpu_interface_no_use> gi{nullptr};
   {
-    auto temp = nf::gpu_interface::create(ar.info().rows, ar.info().cols);
+    auto temp =
+        nf::gpu_interface_no_use::create(ar.info().rows, ar.info().cols);
 
     if (!temp.has_value()) {
       return tl::make_unexpected(fmt::format(
