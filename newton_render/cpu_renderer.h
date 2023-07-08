@@ -71,12 +71,12 @@ class cpu_renderer {
 
   void reset() & noexcept;
 
-  [[deprecated]] void render(
-      const render_config& config, fractal_utils::constant_view map_has_value,
-      fractal_utils::constant_view map_nearest_idx,
-      fractal_utils::constant_view map_complex_difference,
-      fractal_utils::map_view image_u8c3, int skip_rows,
-      int skip_cols) & noexcept;
+  void render(const render_config& config,
+              fractal_utils::constant_view map_has_value,
+              fractal_utils::constant_view map_nearest_idx,
+              fractal_utils::constant_view map_complex_difference,
+              fractal_utils::map_view image_u8c3, int skip_rows,
+              int skip_cols) & noexcept;
 
   [[nodiscard]] tl::expected<void, std::string> render(
       const render_config& config, fractal_utils::map_view image_u8c3,
