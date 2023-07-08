@@ -105,7 +105,7 @@ tl::expected<void, std::string> render_gpu(
                     render_option_objects.error()));
   }
 
-  if constexpr (true) {
+  if constexpr (false) {
     fmt::print("The render config is: {}\n",
                serialize_render_config(render_option_objects.value().first));
     fmt::print("The render config on gpu is: {}\n",
@@ -113,38 +113,25 @@ tl::expected<void, std::string> render_gpu(
                    render_option_objects.value().second->config().value()));
   }
 
-  std::unique_ptr<nf::gpu_interface_no_use> gi{nullptr};
+  std::unique_ptr<nf::gpu_render> renderer{nullptr};
   {
-    auto temp =
-        nf::gpu_interface_no_use::create(ar.info().rows, ar.info().cols);
+    auto temp = nf::gpu_render::create(ar.info().rows, ar.info().cols);
 
     if (!temp.has_value()) {
       return tl::make_unexpected(fmt::format(
           "Failed to create gpu_interface, detail: {}", temp.error()));
     }
-    gi = std::move(temp.value());
+    renderer = std::move(temp.value());
   }
 
   fu::unique_map image_u8c3{(size_t)ar.info().rows, (size_t)ar.info().cols, 3};
 
-#define NF_NFTOOL_HANDEL_ERROR(err) \
-  if (!err.has_value()) return tl::make_unexpected(err.error());
-
-  {
-    auto err = gi->set_has_value(ar.map_has_result());
-    NF_NFTOOL_HANDEL_ERROR(err);
-    err = gi->set_nearest_index(ar.map_nearest_point_idx());
-    NF_NFTOOL_HANDEL_ERROR(err);
-    err = gi->set_complex_difference(ar.map_complex_difference());
-    NF_NFTOOL_HANDEL_ERROR(err);
-
-    gi->wait_for_finished();
-
-    err = gi->run(*render_option_objects.value().second, 0, 0, false);
-    NF_NFTOOL_HANDEL_ERROR(err);
-
-    err = gi->get_pixels(image_u8c3);
-    NF_NFTOOL_HANDEL_ERROR(err);
+  auto err = renderer->render(*render_option_objects.value().second,
+                              ar.map_has_result(), ar.map_nearest_point_idx(),
+                              ar.map_complex_difference(), image_u8c3, 0, 0);
+  if (!err.has_value()) {
+    return tl::make_unexpected(
+        fmt::format("Failed to render because ", err.error()));
   }
 
   if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,

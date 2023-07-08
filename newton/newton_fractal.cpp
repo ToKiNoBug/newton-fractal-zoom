@@ -193,8 +193,16 @@ tl::expected<meta_data, std::string> load_metadata(
       cobj.equation = std::move(eq_e.value());
     }
     if (!cobj.obj_creator->is_fixed_precision()) {
-      cobj.obj_creator->set_precision(*cobj.window);
-      cobj.obj_creator->set_precision(*cobj.equation);
+      auto err = cobj.obj_creator->set_precision(*cobj.window);
+      if (!err.has_value()) {
+        return tl::make_unexpected(fmt::format(
+            "Failed to set precision for window, detail: {}", err.error()));
+      }
+      err = cobj.obj_creator->set_precision(*cobj.equation);
+      if (!err.has_value()) {
+        return tl::make_unexpected(fmt::format(
+            "Failed to set precision for equation, detail: {}", err.error()));
+      }
     }
 
     ret.compute_objs = std::move(cobj);

@@ -284,7 +284,7 @@ tl::expected<void, std::string> gpu_render_impl::render(
           (size_t)cols, sizeof(std::complex<double>)};
       find_min_max(has_value, cv_mag_arg, skip_rows, skip_cols, mag, arg);
     }
-
+    this->m_image.resize(size);
     render_image<<<required_blocks, warp_size, 0, this->m_stream.get()>>>(
         this->m_has_value.data().get(), this->m_nearest_index.data().get(),
         this->m_mag_arg.data().get(), this->m_image.data().get(), mag, arg,

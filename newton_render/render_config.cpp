@@ -197,7 +197,8 @@ njson save_render_config(const render_config &nc) noexcept {
     ret.emplace("point_methods", std::move(methods));
   }
   {
-    njson::array_t color_for_nan{3};
+    njson::array_t color_for_nan;
+    color_for_nan.resize(3);
     for (size_t idx = 0; idx < 3; idx++) {
       color_for_nan[idx] = nc.color_for_nan.value[idx];
     }
