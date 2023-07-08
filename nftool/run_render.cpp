@@ -102,20 +102,8 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
     return tl::make_unexpected(err.error());
   }
 
-  std::vector<const void*> row_ptrs;
-  row_ptrs.reserve(src->info().rows);
-  for (int r = rt.skip_rows; r < src->info().rows - rt.skip_rows; r++) {
-    row_ptrs.emplace_back(image_u8c3.address<fu::pixel_RGB>(r, rt.skip_cols));
-  }
-  //  fmt::print("row_ptrs = [");
-  //  for (auto ptr : row_ptrs) {
-  //    fmt::print("{}, ", ptr);
-  //  }
-  //  fmt::print("]\n");
-
-  if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
-                     row_ptrs.data(), src->info().rows - 2 * rt.skip_rows,
-                     src->info().cols - 2 * rt.skip_cols)) {
+  if (!fu::write_png_skipped(rt.image_filename.c_str(), fu::color_space::u8c3,
+                             image_u8c3, rt.skip_rows, rt.skip_cols)) {
     return tl::make_unexpected(fmt::format(
         "Function fu::write_png failed to generate \"{}\"", rt.image_filename));
   }
