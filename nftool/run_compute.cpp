@@ -1,5 +1,5 @@
 
-#include "run_compute.h"
+#include "tasks.h"
 #include <newton_fractal.h>
 #include <fstream>
 #include <fmt/format.h>

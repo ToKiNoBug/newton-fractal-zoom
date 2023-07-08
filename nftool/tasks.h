@@ -2,8 +2,8 @@
 // Created by joseph on 6/20/23.
 //
 
-#ifndef NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H
-#define NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H
+#ifndef NEWTON_FRACTAL_ZOOM_TASKS_H
+#define NEWTON_FRACTAL_ZOOM_TASKS_H
 
 #include <string>
 #include <optional>
@@ -37,6 +37,8 @@ struct render_task {
 
   std::string image_filename;
   bool use_cpu{false};
+  int skip_rows{0};
+  int skip_cols{0};
 };
 tl::expected<void, std::string> run_render(const render_task& rt) noexcept;
 
@@ -51,4 +53,4 @@ struct look_task {
 };
 tl::expected<void, std::string> run_look(const look_task& lt) noexcept;
 
-#endif  // NEWTON_FRACTAL_ZOOM_RUN_COMPUTE_H
+#endif  // NEWTON_FRACTAL_ZOOM_TASKS_H

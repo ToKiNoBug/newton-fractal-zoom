@@ -1,12 +1,12 @@
-#include <nlohmann/json.hpp>
 #include <CLI11.hpp>
-#include <newton_fractal.h>
 #include <optional>
 #include <fmt/format.h>
-#include "run_compute.h"
 #include <newton_archive.h>
 #include <string>
+#include <nlohmann/json.hpp>
+#include <newton_fractal.h>
 
+#include "tasks.h"
 int main(int argc, char** argv) {
   CLI::App capp;
   capp.set_version_flag("--version", NEWTON_FRACTAL_VERSION_STR);
@@ -50,6 +50,12 @@ int main(int argc, char** argv) {
     render->add_option("-o", rt.image_filename);
     render->add_option("--rj,--render-json", rt.render_config_filename);
     render->add_flag("--cpu", rt.use_cpu)->default_val(false);
+    render->add_option("--skip-rows", rt.skip_rows)
+        ->default_val(0)
+        ->check(CLI::NonNegativeNumber);
+    render->add_option("--skip-cols", rt.skip_cols)
+        ->default_val(0)
+        ->check(CLI::NonNegativeNumber);
   }
 
   auto look = capp.add_subcommand("look");

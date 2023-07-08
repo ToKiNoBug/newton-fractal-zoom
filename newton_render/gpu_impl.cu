@@ -284,7 +284,7 @@ tl::expected<void, std::string> gpu_render_impl::render(
           (size_t)cols, sizeof(std::complex<double>)};
       find_min_max(has_value, cv_mag_arg, skip_rows, skip_cols, mag, arg);
     }
-    this->m_image.resize(size);
+    this->m_image.resize(global_size);
     render_image<<<required_blocks, warp_size, 0, this->m_stream.get()>>>(
         this->m_has_value.data().get(), this->m_nearest_index.data().get(),
         this->m_mag_arg.data().get(), this->m_image.data().get(), mag, arg,
@@ -358,7 +358,7 @@ __global__ void render_image(
     fu::pixel_RGB color_nan, const render_config::render_method* methods,
     int rows, int cols, int skip_rows, int skip_cols) {
   const uint32_t thread_index = blockDim.x * blockIdx.x + threadIdx.x;
-  if (thread_index >= rows * cols) {
+  if (thread_index >= (rows - 2 * skip_rows) * (cols - 2 * skip_cols)) {
     return;
   }
 

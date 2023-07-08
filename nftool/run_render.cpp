@@ -2,9 +2,10 @@
 #include <newton_archive.h>
 #include <newton_fractal.h>
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <newton_render.h>
 #include <png_utils.h>
-#include "run_compute.h"
+#include "tasks.h"
 
 tl::expected<std::pair<nf::render_config,
                        std::unique_ptr<nf::render_config_gpu_interface>>,
@@ -49,11 +50,13 @@ create_render_config_objects(const render_task& rt,
   return std::make_pair(std::move(render_config), std::move(render_config_gpu));
 }
 
-tl::expected<void, std::string> render_gpu(
-    const render_task& rt, const nf::newton_archive& ar) noexcept;
+tl::expected<void, std::string> render_gpu(const render_task& rt,
+                                           const nf::newton_archive& ar,
+                                           fu::unique_map& image) noexcept;
 
-tl::expected<void, std::string> render_cpu(
-    const render_task& rt, const nf::newton_archive& ar) noexcept;
+tl::expected<void, std::string> render_cpu(const render_task& rt,
+                                           const nf::newton_archive& ar,
+                                           fu::unique_map& image) noexcept;
 
 tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
   std::optional<nf::newton_archive> archive{std::nullopt};
@@ -88,15 +91,40 @@ tl::expected<void, std::string> run_render(const render_task& rt) noexcept {
     }
   }
 
+  fu::unique_map image_u8c3;
+  tl::expected<void, std::string> err;
   if (rt.use_cpu) {
-    return render_cpu(rt, *src);
+    err = render_cpu(rt, *src, image_u8c3);
   } else {
-    return render_gpu(rt, *src);
+    err = render_gpu(rt, *src, image_u8c3);
   }
+  if (!err.has_value()) {
+    return tl::make_unexpected(err.error());
+  }
+
+  std::vector<const void*> row_ptrs;
+  row_ptrs.reserve(src->info().rows);
+  for (int r = rt.skip_rows; r < src->info().rows - rt.skip_rows; r++) {
+    row_ptrs.emplace_back(image_u8c3.address<fu::pixel_RGB>(r, rt.skip_cols));
+  }
+  fmt::print("row_ptrs = [");
+  for (auto ptr : row_ptrs) {
+    fmt::print("{}, ", ptr);
+  }
+  fmt::print("]\n");
+
+  if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
+                     row_ptrs.data(), src->info().rows - 2 * rt.skip_rows,
+                     src->info().cols - 2 * rt.skip_cols)) {
+    return tl::make_unexpected(fmt::format(
+        "Function fu::write_png failed to generate \"{}\"", rt.image_filename));
+  }
+  return {};
 }
 
 tl::expected<void, std::string> render_gpu(
-    const render_task& rt, const nf::newton_archive& ar) noexcept {
+    const render_task& rt, const nf::newton_archive& ar,
+    fu::unique_map& image_u8c3) noexcept {
   auto render_option_objects =
       create_render_config_objects(rt, ar.info().num_points());
   if (!render_option_objects.has_value()) {
@@ -124,26 +152,23 @@ tl::expected<void, std::string> render_gpu(
     renderer = std::move(temp.value());
   }
 
-  fu::unique_map image_u8c3{(size_t)ar.info().rows, (size_t)ar.info().cols, 3};
+  image_u8c3.reset((size_t)ar.info().rows, (size_t)ar.info().cols, 3);
 
   auto err = renderer->render(*render_option_objects.value().second,
                               ar.map_has_result(), ar.map_nearest_point_idx(),
-                              ar.map_complex_difference(), image_u8c3, 0, 0);
+                              ar.map_complex_difference(), image_u8c3,
+                              rt.skip_rows, rt.skip_cols);
   if (!err.has_value()) {
     return tl::make_unexpected(
         fmt::format("Failed to render because ", err.error()));
   }
 
-  if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
-                     image_u8c3)) {
-    return tl::make_unexpected(fmt::format(
-        "Function fu::write_png failed to generate \"{}\"", rt.image_filename));
-  }
   return {};
 }
 
 tl::expected<void, std::string> render_cpu(
-    const render_task& rt, const nf::newton_archive& ar) noexcept {
+    const render_task& rt, const nf::newton_archive& ar,
+    fu::unique_map& image_u8c3) noexcept {
   nf::render_config config;
   {
     auto render_config_opt =
@@ -154,16 +179,13 @@ tl::expected<void, std::string> render_cpu(
     config = std::move(render_config_opt.value());
   }
 
-  fu::unique_map image_u8c3{(size_t)ar.info().rows, (size_t)ar.info().cols, 3};
+  // fu::unique_map image_u8c3{(size_t)ar.info().rows, (size_t)ar.info().cols,
+  // 3};
+  image_u8c3.reset((size_t)ar.info().rows, (size_t)ar.info().cols, 3);
 
   nf::cpu_renderer renderer;
   renderer.render(config, ar.map_has_result(), ar.map_nearest_point_idx(),
                   ar.map_complex_difference(), image_u8c3, 0, 0);
 
-  if (!fu::write_png(rt.image_filename.c_str(), fu::color_space::u8c3,
-                     image_u8c3)) {
-    return tl::make_unexpected(fmt::format(
-        "Function fu::write_png failed to generate \"{}\"", rt.image_filename));
-  }
   return {};
 }
