@@ -8,10 +8,13 @@
 #include <newton_archive.h>
 #include <newton_render.h>
 #include <video_utils.h>
+#include <tl/expected.hpp>
 
 class common_info : public fractal_utils::common_info_base {
  public:
 };
+
+tl::expected<common_info, std::string> load_common_info();
 
 struct thin_compute_objs {
   std::unique_ptr<nf::object_creator> obj_creator{nullptr};

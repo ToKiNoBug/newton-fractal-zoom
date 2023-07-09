@@ -1,0 +1,32 @@
+[common]
+start_task_file = ""
+archive_num = 100
+ratio = 3
+
+[compute]
+threads = 20
+archive_prefix = "archive/"
+archive_suffix = ""
+archive_extension = ".nfar.zst"
+
+[render]
+threads = 20
+render_once = true
+image_per_frame = 60
+extra_image_num = 6
+image_prefix = "image/"
+image_suffix = ""
+
+[video]
+threads = 4
+prefer_symlink = true
+temp.video_prefix = "video/temp/"
+temp.video_suffix = ""
+temp.encoder_flags = "-cfg=30"
+temp.encoder = "x265"
+temp.extension = "mp4"
+product.video_prefix = "video/"
+product.video_suffix = ""
+product.encoder_flags = "-cfg=18"
+product.encoder = "x265"
+product.extension = "mp4"
