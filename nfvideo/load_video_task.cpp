@@ -41,20 +41,30 @@ std::optional<fu::full_task> video_executor::load_task(
 
     ret.common =
         std::make_unique<common_info>(parse_ci(task.at("common").as_table()));
+    assert(ret.common != nullptr);
     {
       auto compute_temp = parse_ct(task.at("compute").as_table());
       compute_temp.related_ci = dynamic_cast<common_info *>(ret.common.get());
       ret.compute = std::make_unique<compute_task>(std::move(compute_temp));
     }
+    assert(ret.compute != nullptr);
     ret.render =
         std::make_unique<render_task>(parse_rt(task.at("render").as_table()));
+    assert(ret.render != nullptr);
 
     ret.video =
         std::make_unique<video_task>(parse_vt(task.at("video").as_table()));
+    assert(ret.video != nullptr);
     // dynamic_cast<compute_task *>(ret.compute.get())->related_ci =
 
+  } catch (const toml::parse_error &e) {
+    fmt::print("Failed to parse the task file: {}", e.what());
+    return std::nullopt;
   } catch (const std::exception &e) {
     fmt::print("Exception occurred when parsing task file: {}", e.what());
+    return std::nullopt;
+  } catch (...) {
+    fmt::print("Unknown exception caught.");
     return std::nullopt;
   }
 
@@ -144,7 +154,12 @@ video_task parse_vt(const toml::table *tbl) noexcept(false) {
   vt.temp_config = parse_vt_config(tbl->at("temp").as_table());
   vt.product_config = parse_vt_config(tbl->at("product").as_table());
   vt.threads = tbl->at("threads").value<int>().value_or(4);
-  vt.ffmpeg_exe = tbl->at("ffmpeg_exe").value<std::string>().value_or("ffmpeg");
+  if (tbl->contains("ffmpeg_exe")) {
+    vt.ffmpeg_exe = tbl->at("ffmpeg_exe").value<std::string>().value();
+  } else {
+    vt.ffmpeg_exe = "ffmpeg";
+  }
+
   vt.product_name = tbl->at("product_name").value<std::string>().value();
 
   return vt;

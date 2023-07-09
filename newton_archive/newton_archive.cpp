@@ -41,6 +41,10 @@ tl::expected<void, std::string> newton_archive::save(
         "The compute objects are missing from metainfo struct.");
   }
 
+  if (!os) {
+    return tl::make_unexpected("The given std::ostream is not ok.");
+  }
+
   fu::binary_archive ar;
 
   {

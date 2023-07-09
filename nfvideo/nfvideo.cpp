@@ -34,6 +34,18 @@ int main(int argc, char** argv) {
     ve.load_archive_as_render_mode = false;
   }
 
+  {
+    std::string err;
+    auto temp = ve.load_task(err);
+    if (!temp.has_value()) {
+      fmt::print(
+          "Failed to load task, the task file may be invalid.\nDetail: {}\n",
+          err);
+      return 1;
+    }
+    ve.set_task(std::move(temp.value()));
+  }
+
   if (compute->count() > 0) {
     const auto success = ve.run_compute();
     if (!success) {

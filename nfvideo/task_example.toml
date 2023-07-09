@@ -1,22 +1,22 @@
 [common]
-start_task_file = ""
-archive_num = 100
+start_task_file = "@example_task_file@"
+archive_num = 10
 ratio = 3
 
 [compute]
 threads = 20
-archive_prefix = "archive/"
+archive_prefix = "@CMAKE_CURRENT_BINARY_DIR@/archive/"
 archive_suffix = ""
-archive_extension = ".nfar.zst"
+archive_extension = "nfar.zst"
 
 [render]
 threads = 20
 render_once = true
 image_per_frame = 60
 extra_image_num = 6
-image_prefix = "image/"
+image_prefix = "@CMAKE_CURRENT_BINARY_DIR@/image/"
 image_suffix = ""
-render_json_file = ""
+render_json_file = "@example_render_json_file@"
 
 [video]
 threads = 4
@@ -24,12 +24,12 @@ prefer_symlink = true
 #ffmpeg_exe = "ffmpeg"
 product_name = "product"
 
-temp.video_prefix = "video/temp/"
+temp.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/temp/"
 temp.video_suffix = ""
 temp.encoder_flags = "-cfg=30"
 temp.encoder = "x265"
 temp.extension = "mp4"
-product.video_prefix = "video/"
+product.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/"
 product.video_suffix = ""
 product.encoder_flags = "-cfg=18"
 product.encoder = "x265"

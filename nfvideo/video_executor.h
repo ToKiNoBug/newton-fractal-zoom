@@ -15,6 +15,7 @@ class video_executor : public fu::video_executor_base {
   [[nodiscard]] std::unique_ptr<fu::video_task_base> load_video_task(
       std::string &err) const noexcept final;
 
+ public:
   [[nodiscard]] std::optional<fu::full_task> load_task(
       std::string &err) const noexcept final;
 

@@ -2,6 +2,7 @@
 #include "load_video_task.h"
 #include <newton_archive.h>
 #include <newton_render.h>
+#include <omp.h>
 
 void video_executor::compute(int archive_idx, const fu::wind_base &window,
                              std::any &ret) const noexcept {
@@ -23,6 +24,7 @@ void video_executor::compute(int archive_idx, const fu::wind_base &window,
       window, ar.info().rows, ar.info().cols));
 
   ar.setup_matrix();
+  omp_set_num_threads(this->task().compute->threads);
   nf::newton_equation_base::compute_option opt{
       .bool_has_result = ar.map_has_result(),
       .u8_nearest_point_idx = ar.map_nearest_point_idx(),
@@ -91,7 +93,7 @@ std::string video_executor::save_archive(
 
   auto err = arp->save(filename);
   if (!err) {
-    return std::move(err.error());
+    return fmt::format("Failed to save archive because {}", err.error());
   }
   return {};
 }
@@ -104,7 +106,7 @@ std::string video_executor::error_of_archive(std::string_view filename,
   }
   auto err = nf::check_archive(*arp);
   if (!err) {
-    return std::move(err.error());
+    return err.error();
   }
   return {};
 }
@@ -123,7 +125,7 @@ std::string video_executor::load_archive(std::string_view filename,
 
   if (!err) {
     archive.reset();
-    return std::move(err.error());
+    return err.error();
   }
   return {};
 }
