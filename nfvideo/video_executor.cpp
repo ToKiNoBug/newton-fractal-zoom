@@ -19,12 +19,17 @@ void video_executor::compute(int archive_idx, const fu::wind_base &window,
     exit(1);
     return;
   }
-
-  ar.info().set_precision(ar.info().obj_creator()->suggested_precision_of(
-      window, ar.info().rows, ar.info().cols));
+  if (!ar.info().obj_creator()->is_fixed_precision()) {
+    ar.info().set_precision(ar.info().obj_creator()->suggested_precision_of(
+        window, ar.info().rows, ar.info().cols));
+  }
 
   ar.setup_matrix();
-  omp_set_num_threads(this->task().compute->threads);
+
+  //  fmt::print("center = [{}, {}]\n",
+  //  ar.info().window()->displayed_center()[0],
+  //             ar.info().window()->displayed_center()[1]);
+  // omp_set_num_threads(this->task().compute->threads);
   nf::newton_equation_base::compute_option opt{
       .bool_has_result = ar.map_has_result(),
       .u8_nearest_point_idx = ar.map_nearest_point_idx(),

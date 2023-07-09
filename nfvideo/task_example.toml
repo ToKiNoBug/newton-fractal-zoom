@@ -13,7 +13,7 @@ archive_extension = "nfar.zst"
 threads = 20
 render_once = false
 image_per_frame = 60
-extra_image_num = 6
+extra_image_num = 4
 image_prefix = "@CMAKE_CURRENT_BINARY_DIR@/image/"
 image_suffix = ""
 render_json_file = "@example_render_json_file@"
@@ -26,11 +26,11 @@ product_name = "product"
 
 temp.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/temp/"
 temp.video_suffix = ""
-temp.encoder_flags = "-cfg=30"
-temp.encoder = "x265"
+temp.encoder_flags = "-crf 30"
+temp.encoder = "libx264"
 temp.extension = "mp4"
 product.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/"
 product.video_suffix = ""
-product.encoder_flags = "-cfg=18"
-product.encoder = "x265"
+product.encoder_flags = "-crf 18"
+product.encoder = "libx264"
 product.extension = "mp4"
