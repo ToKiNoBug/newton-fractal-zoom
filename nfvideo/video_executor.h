@@ -25,9 +25,9 @@ class video_executor : public fu::video_executor_base {
   [[nodiscard]] std::unique_ptr<fu::render_resource_base>
   create_render_resource() const noexcept final;
 
-  [[nodiscard]] std::string render(
-      const std::any &archive, int archive_index, int image_idx,
-      fu::map_view image_u8c3,
+  [[nodiscard]] std::string render_with_skip(
+      const std::any &archive, int archive_index, int image_idx, int skip_rows,
+      int skip_cols, fu::map_view image_u8c3,
       fu::render_resource_base *resource) const noexcept final;
 
   [[nodiscard]] err_info_t save_archive(

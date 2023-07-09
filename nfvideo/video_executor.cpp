@@ -67,9 +67,9 @@ video_executor::create_render_resource() const noexcept {
   return std::make_unique<render_resource>(std::move(temp));
 }
 
-std::string video_executor::render(
-    const std::any &archive, int archive_index, int image_idx,
-    fu::map_view image_u8c3,
+std::string video_executor::render_with_skip(
+    const std::any &archive, int archive_index, int image_idx, int skip_rows,
+    int skip_cols, fu::map_view image_u8c3,
     fu::render_resource_base *resource_base) const noexcept {
   const auto *arp = std::any_cast<nf::newton_archive>(&archive);
   if (arp == nullptr) {
@@ -79,6 +79,50 @@ std::string video_executor::render(
   if (resource == nullptr) {
     return "The render resource ptr is null, or not an instance of "
            "::render_resource.";
+  }
+
+  thread_local int prev_archive_index = -1;
+  bool need_set_data = false;
+  if (prev_archive_index != archive_index) {
+    need_set_data = true;
+    prev_archive_index = archive_index;
+  }
+  const auto &config =
+      dynamic_cast<render_task *>(this->task().render.get())->render_config;
+  if (resource->renderer.index() == 0) {
+    auto &cpu_renderer = std::get<0>(resource->renderer);
+    if (need_set_data) {
+      cpu_renderer.set_data(arp->map_has_result(), arp->map_nearest_point_idx(),
+                            arp->map_complex_difference(), false);
+    }
+    auto err = cpu_renderer.render(config, image_u8c3, skip_rows, skip_cols);
+    if (!err) {
+      return err.error();
+    }
+  } else {
+    auto &suit = std::get<1>(resource->renderer);
+    thread_local bool is_config_passed_to_gpu = false;
+    if (!is_config_passed_to_gpu) {
+      is_config_passed_to_gpu = true;
+      auto err = suit.config->set_config(config);
+      if (!err) {
+        return fmt::format("Failed to pass render config to gpu because {}",
+                           err.error());
+      }
+    }
+    if (need_set_data) {
+      auto err = suit.renderer->set_data(arp->map_has_result(),
+                                         arp->map_nearest_point_idx(),
+                                         arp->map_complex_difference(), false);
+      if (!err) {
+        return fmt::format("gpu_renderer->set_data because {}", err.error());
+      }
+    }
+    auto err =
+        suit.renderer->render(*suit.config, image_u8c3, skip_rows, skip_cols);
+    if (!err) {
+      return fmt::format("gpu_renderer->set_data because {}", err.error());
+    }
   }
 
   return {};

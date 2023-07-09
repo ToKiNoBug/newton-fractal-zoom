@@ -11,7 +11,7 @@ archive_extension = "nfar.zst"
 
 [render]
 threads = 20
-render_once = true
+render_once = false
 image_per_frame = 60
 extra_image_num = 6
 image_prefix = "@CMAKE_CURRENT_BINARY_DIR@/image/"
