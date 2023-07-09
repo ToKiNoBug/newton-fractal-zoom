@@ -21,6 +21,9 @@ render_json_file = ""
 [video]
 threads = 4
 prefer_symlink = true
+#ffmpeg_exe = "ffmpeg"
+product_name = "product"
+
 temp.video_prefix = "video/temp/"
 temp.video_suffix = ""
 temp.encoder_flags = "-cfg=30"

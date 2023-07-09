@@ -2,12 +2,13 @@
 #include "load_video_task.h"
 #include "video_executor.h"
 #include <fmt/format.h>
-#include <toml++/toml.h>
 
 int main(int argc, char** argv) {
+  video_executor ve;
+
   CLI::App app;
-  std::string toml_file{"nfvideo.toml"};
-  app.add_option("task file", toml_file)
+  ve.task_file = "nfvideo.toml";
+  app.add_option("task file", ve.task_file)
       ->check(CLI::ExistingFile)
       ->check(CLI::Validator{[](std::string& in) -> std::string {
                                if (in.ends_with(".toml")) return {};
@@ -15,20 +16,46 @@ int main(int argc, char** argv) {
                              },
                              "Extension must be .toml", "Extension check"});
 
+  auto compute = app.add_subcommand("compute");
+  auto render = app.add_subcommand("render");
+  render->add_flag("--gpu", ve.use_gpu, "Render with gpu.")->default_val(true);
+
+  auto mkvideo = app.add_subcommand("mkvideo");
+  bool dry_run{false};
+  mkvideo
+      ->add_flag("--dry-run", dry_run,
+                 "Display command instead of executing them.")
+      ->default_val(false);
+
   CLI11_PARSE(app, argc, argv);
 
-  try {
-    auto result = toml::parse_file(toml_file);
-    auto common = result.at("common").as_table();
-    fmt::print("common.start_task_file = \"{}\"\n",
-               common->at("start_task_file").value<std::string>().value());
-    fmt::print("common.archive_num = {}\n",
-               common->at("archive_num").value<int>().value());
-    auto ratio = common->at("ratio").value<double>().value();
-    fmt::print("common.ratio = {}\n", ratio);
+  ve.load_archive_as_render_mode = true;
+  if (compute->count() > 0) {
+    ve.load_archive_as_render_mode = false;
+  }
 
-  } catch (const std::exception& e) {
-    fmt::print("Exception: {}", e.what());
+  if (compute->count() > 0) {
+    const auto success = ve.run_compute();
+    if (!success) {
+      fmt::print("Computation failed.\n");
+      return 1;
+    }
+  }
+
+  if (render->count() > 0) {
+    const auto success = ve.run_render();
+    if (!success) {
+      fmt::print("Render failed.\n");
+      return 1;
+    }
+  }
+
+  if (mkvideo->count() > 0) {
+    const auto success = ve.make_video(dry_run);
+    if (!success) {
+      fmt::print("Make video failed.\n");
+      return 1;
+    }
   }
 
   return 0;

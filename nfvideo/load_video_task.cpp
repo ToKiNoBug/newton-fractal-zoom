@@ -144,6 +144,8 @@ video_task parse_vt(const toml::table *tbl) noexcept(false) {
   vt.temp_config = parse_vt_config(tbl->at("temp").as_table());
   vt.product_config = parse_vt_config(tbl->at("product").as_table());
   vt.threads = tbl->at("threads").value<int>().value_or(4);
+  vt.ffmpeg_exe = tbl->at("ffmpeg_exe").value<std::string>().value_or("ffmpeg");
+  vt.product_name = tbl->at("product_name").value<std::string>().value();
 
   return vt;
 }
