@@ -60,6 +60,11 @@ class cpu_renderer {
 
  public:
   cpu_renderer() = default;
+  cpu_renderer(const cpu_renderer&) = delete;
+  cpu_renderer(cpu_renderer&&) = default;
+
+  cpu_renderer& operator=(const cpu_renderer&) = delete;
+  cpu_renderer& operator=(cpu_renderer&&) = delete;
 
   void set_data(fractal_utils::constant_view has_value,
                 fractal_utils::constant_view map_nearest_idx,

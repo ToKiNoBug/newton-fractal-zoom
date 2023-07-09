@@ -18,7 +18,7 @@ include(cmake/configure_3rdParty.cmake)
 
 find_package(OpenMP REQUIRED)
 find_package(fmt REQUIRED)
-find_package(fractal_utils 2.3.18 COMPONENTS
+find_package(fractal_utils 2.3.20 COMPONENTS
     core_utils
     png_utils
     multiprecision_utils

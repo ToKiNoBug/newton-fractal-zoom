@@ -10,21 +10,36 @@
 #include <video_utils.h>
 #include <tl/expected.hpp>
 
+class video_executor;
+
 class common_info : public fractal_utils::common_info_base {
  public:
+  nf::meta_data metadata;
+
+  [[nodiscard]] size_t rows() const noexcept final {
+    return this->metadata.rows;
+  }
+  [[nodiscard]] size_t cols() const noexcept final {
+    return this->metadata.cols;
+  }
 };
 
 tl::expected<common_info, std::string> load_common_info();
 
-struct thin_compute_objs {
-  std::unique_ptr<nf::object_creator> obj_creator{nullptr};
-  std::unique_ptr<nf::newton_equation_base> equation{nullptr};
-};
-
 class compute_task : public fractal_utils::compute_task_base {
+ private:
+  common_info *related_ci{nullptr};
+  friend class video_executor;
+
  public:
-  std::variant<thin_compute_objs, nf::meta_data::non_compute_info>
-      thin_metainfo;
+  [[nodiscard]] fu::wind_base *start_window() noexcept final {
+    return this->related_ci->metadata.window();
+  }
+  [[nodiscard]] const fu::wind_base *start_window() const noexcept final {
+    return this->related_ci->metadata.window();
+  }
+  //  std::variant<thin_compute_objs, nf::meta_data::non_compute_info>
+  //      thin_metainfo;
 };
 
 class render_task : public fu::render_task_base {
@@ -34,7 +49,7 @@ class render_task : public fu::render_task_base {
 
 class video_task : public fu::video_task_base {};
 
-class render_resource : public fu::render_task_base {
+class render_resource : public fu::render_resource_base {
  public:
   struct gpu_render_suit {
     std::unique_ptr<nf::gpu_render> renderer{nullptr};

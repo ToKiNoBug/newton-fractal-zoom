@@ -16,6 +16,7 @@ image_per_frame = 60
 extra_image_num = 6
 image_prefix = "image/"
 image_suffix = ""
+render_json_file = ""
 
 [video]
 threads = 4
