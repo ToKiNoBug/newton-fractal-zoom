@@ -29,7 +29,7 @@ target_link_libraries(newton_render PUBLIC
 
 target_compile_features(newton_render PUBLIC cxx_std_17)
 
-target_include_directories(newton_render PRIVATE
+target_include_directories(newton_render PUBLIC
     ${NF_njson_include_dir})
 target_include_directories(newton_render INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -40,6 +40,12 @@ target_link_libraries(test_newton_render PRIVATE
 target_include_directories(test_newton_render PRIVATE
     ${NF_cli11_include_dir})
 
+add_executable(test_rj test_rj.cpp)
+target_link_libraries(test_rj PRIVATE
+    newton_render)
+target_include_directories(test_rj PRIVATE
+    ${NF_cli11_include_dir})
+
 
 install(TARGETS newton_render
     LIBRARY DESTINATION lib
@@ -47,3 +53,10 @@ install(TARGETS newton_render
 
 file(GLOB render_json_files "${CMAKE_SOURCE_DIR}/render_jsons/*.json")
 install(FILES ${render_json_files} DESTINATION render_presets)
+
+foreach (rj_file ${render_json_files})
+    cmake_path(GET rj_file FILENAME pure_filename)
+    add_test(NAME "render_json-${pure_filename}"
+        COMMAND test_rj ${rj_file}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endforeach ()

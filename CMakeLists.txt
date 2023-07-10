@@ -47,6 +47,8 @@ endif ()
 
 add_compile_definitions("NEWTON_FRACTAL_VERSION_STR=\"${PROJECT_VERSION}\"")
 
+enable_testing()
+
 add_subdirectory(newton)
 add_subdirectory(newton_archive)
 add_subdirectory(newton_render)

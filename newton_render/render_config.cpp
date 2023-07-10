@@ -57,6 +57,28 @@ parse_color_value_mapping(const njson &nj) noexcept {
   return cvm;
 }
 
+tl::expected<void, std::string> check_mapping(
+    const render_config::render_method::color_value_mapping &m,
+    double lower_bound, double upper_bound) noexcept {
+  for (size_t idx = 0; idx < 2; idx++) {
+    if (m.range[idx] < lower_bound || m.range[idx] > upper_bound) {
+      return tl::make_unexpected(fmt::format(
+          "The range should be in range [{}, {}], but met {} at index {}.",
+          lower_bound, upper_bound, m.range[idx], idx));
+    }
+  }
+  return {};
+}
+
+tl::expected<void, std::string> check_hue(
+    const render_config::render_method::color_value_mapping &m) {
+  return check_mapping(m, 0, std::nextafter<double>(360, -1));
+}
+tl::expected<void, std::string> check_saturation_value(
+    const render_config::render_method::color_value_mapping &m) {
+  return check_mapping(m, 0, 1);
+}
+
 tl::expected<render_config::render_method, std::string> parse_render_method(
     const njson &nj) noexcept {
   render_config::render_method ret{};
@@ -68,6 +90,11 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
             fmt::format("Failed to parse hue, detail: {}", mapping.error()));
       }
       ret.hue = mapping.value();
+      auto err = check_hue(ret.hue);
+      if (!err) {
+        return tl::make_unexpected(
+            fmt::format("The range of hue is invalid: {}", err.error()));
+      }
     }
     {
       auto mapping = parse_color_value_mapping(nj.at("saturation"));
@@ -76,6 +103,10 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
             "Failed to parse saturation, detail: {}", mapping.error()));
       }
       ret.saturation = mapping.value();
+      auto err = check_saturation_value(ret.saturation);
+      if (!err) {
+        fmt::format("The range of saturation is invalid: {}", err.error());
+      }
     }
     {
       auto mapping = parse_color_value_mapping(nj.at("value"));
@@ -84,6 +115,10 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
             fmt::format("Failed to parse value, detail: {}", mapping.error()));
       }
       ret.value = mapping.value();
+      auto err = check_saturation_value(ret.value);
+      if (!err) {
+        fmt::format("The range of value is invalid: {}", err.error());
+      }
     }
   } catch (std::exception &e) {
     return tl::make_unexpected(
