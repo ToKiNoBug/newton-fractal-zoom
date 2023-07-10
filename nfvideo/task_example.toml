@@ -24,13 +24,16 @@ prefer_symlink = true
 #ffmpeg_exe = "ffmpeg"
 product_name = "product"
 
-temp.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/temp/"
-temp.video_suffix = ""
-temp.encoder_flags = "-crf 30"
-temp.encoder = "libx264"
-temp.extension = "mp4"
-product.video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/"
-product.video_suffix = ""
-product.encoder_flags = "-crf 18"
-product.encoder = "libx264"
-product.extension = "mp4"
+[video.temp]
+video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/temp/"
+video_suffix = ""
+encoder_flags = "-crf 30"
+encoder = "libx264"
+extension = "mp4"
+
+[video.product]
+video_prefix = "@CMAKE_CURRENT_BINARY_DIR@/video/"
+video_suffix = ""
+encoder_flags = "-crf 18 -pix_fmt yuv420p"
+encoder = "libx265"
+extension = "mp4"
