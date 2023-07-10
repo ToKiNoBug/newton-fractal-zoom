@@ -53,4 +53,11 @@ struct look_task {
 };
 tl::expected<void, std::string> run_look(const look_task& lt) noexcept;
 
+struct task_cvt_task {
+  std::string input_task;
+  std::string object_format;
+  std::string out_file;
+};
+tl::expected<void, std::string> run_task_cvt(const task_cvt_task& tct) noexcept;
+
 #endif  // NEWTON_FRACTAL_ZOOM_TASKS_H

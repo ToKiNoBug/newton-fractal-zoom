@@ -5,6 +5,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <newton_fractal.h>
+#include <magic_enum.hpp>
 
 #include "tasks.h"
 int main(int argc, char** argv) {
@@ -73,6 +74,18 @@ int main(int argc, char** argv) {
                      lt.extract_complex_difference);
   }
 
+  auto taskcvt = capp.add_subcommand("taskcvt");
+  task_cvt_task tct;
+  {
+    taskcvt->add_option("input_file", tct.input_task, "Input task file")
+        ->required()
+        ->check(CLI::ExistingFile);
+    taskcvt->add_option("--format,-f", tct.object_format, "Object format")
+        ->required()
+        ->check(CLI::IsMember(magic_enum::enum_names<nf::float_save_format>()));
+    taskcvt->add_option("-o", tct.out_file, "Generated file.")->required();
+  }
+
   CLI11_PARSE(capp, argc, argv);
 
   nf::newton_archive archive;
@@ -101,6 +114,14 @@ int main(int argc, char** argv) {
     auto result = run_look(lt);
     if (!result.has_value()) {
       fmt::print("Failed to lookup. Detail: {}\n", result.error());
+      return 1;
+    }
+  }
+
+  if (taskcvt->count() > 0) {
+    auto result = run_task_cvt(tct);
+    if (!result) {
+      fmt::print("Failed to convert task file. Detail: {}\n", result.error());
       return 1;
     }
   }
