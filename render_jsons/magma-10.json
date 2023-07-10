@@ -1,0 +1,119 @@
+{
+  "color_for_nan": [
+    0,
+    0,
+    0
+  ],
+  "point_methods": [
+    {
+      "hue": {
+        "range": 61
+      },
+      "saturation": {
+        "range": 0.24
+      },
+      "value": {
+        "range": 0.99
+      }
+    },
+    {
+      "hue": {
+        "range": 32
+      },
+      "saturation": {
+        "range": 0.45
+      },
+      "value": {
+        "range": 0.99
+      }
+    },
+    {
+      "hue": {
+        "range": 18
+      },
+      "saturation": {
+        "range": 0.6
+      },
+      "value": {
+        "range": 0.99
+      }
+    },
+    {
+      "hue": {
+        "range": 1
+      },
+      "saturation": {
+        "range": 0.61
+      },
+      "value": {
+        "range": 0.94
+      }
+    },
+    {
+      "hue": {
+        "range": 339
+      },
+      "saturation": {
+        "range": 0.7
+      },
+      "value": {
+        "range": 0.8
+      }
+    },
+    {
+      "hue": {
+        "range": 317
+      },
+      "saturation": {
+        "range": 0.71
+      },
+      "value": {
+        "range": 0.62
+      }
+    },
+    {
+      "hue": {
+        "range": 290
+      },
+      "saturation": {
+        "range": 0.76
+      },
+      "value": {
+        "range": 0.51
+      }
+    },
+    {
+      "hue": {
+        "range": 271
+      },
+      "saturation": {
+        "range": 0.87
+      },
+      "value": {
+        "range": 0.46
+      }
+    },
+    {
+      "hue": {
+        "range": 250
+      },
+      "saturation": {
+        "range": 0.75
+      },
+      "value": {
+        "range": 0.24
+      }
+    },
+    {
+      "hue": {
+        "range": 240
+      },
+      "saturation": {
+        "range": 1
+      },
+      "value": {
+        "range": 0.01
+      }
+    }
+  ]
+}
