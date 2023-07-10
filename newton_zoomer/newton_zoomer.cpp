@@ -159,7 +159,7 @@ QString newton_zoomer::export_frame(QString _filename,
   }
 
   if (_filename.endsWith(".json")) {
-    auto res = save_metadata(ar_ptr->info());
+    auto res = save_metadata(ar_ptr->info(), nf::float_save_format::hex_string);
     if (!res.has_value()) {
       return QString::fromUtf8(res.error());
     }

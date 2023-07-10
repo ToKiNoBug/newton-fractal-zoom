@@ -129,6 +129,31 @@ void compute_norm2(const complex_t& a, real_t& b) noexcept {
 
 namespace internal {
 
+inline void strip_extra_0(std::string& str) noexcept {
+  while (true) {
+    if (str.empty()) {
+      break;
+    }
+    if (str.ends_with('.')) {
+      break;
+    }
+    if (str.ends_with('0') || str.ends_with(' ')) {
+      str.pop_back();
+    } else {
+      break;
+    }
+  }
+
+  if (str.ends_with('.')) {
+    str.push_back('0');
+    return;
+  }
+  if (str.empty()) {
+    str.push_back('0');
+    return;
+  }
+}
+
 template <typename float_t>
 njson save_float_by_format(const float_t& number, float_save_format fsf,
                            std::stringstream& ss,
@@ -151,7 +176,8 @@ njson save_float_by_format(const float_t& number, float_save_format fsf,
 #else
       constexpr bool is_quadmath = false;
 #endif
-
+      ss.precision(100000);
+      // ss.setf(std::ios::fixed);
       if constexpr (is_quadmath) {
         ss << double(number);
       } else {
@@ -160,6 +186,7 @@ njson save_float_by_format(const float_t& number, float_save_format fsf,
 
       std::string result;
       ss >> result;
+      strip_extra_0(result);
       ret = result;
       break;
     }
