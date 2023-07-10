@@ -20,6 +20,21 @@
       }
     }
   */
+
+
+  /*
+  ,{
+      "hue": {
+        "range":
+      },
+      "saturation": {
+        "range":
+      },
+      "value": {
+        "range":
+      }
+    }
+  */
   "point_methods": [
   ]
 }

@@ -1,0 +1,141 @@
+{
+  "color_for_nan": [
+    0,
+    0,
+    0
+  ],
+  "point_methods": [
+    {
+      "hue": {
+        "range": 201
+      },
+      "saturation": {
+        "range": 0.27
+      },
+      "value": {
+        "range": 0.89
+      }
+    },
+    {
+      "hue": {
+        "range": 204
+      },
+      "saturation": {
+        "range": 0.83
+      },
+      "value": {
+        "range": 0.71
+      }
+    },
+    {
+      "hue": {
+        "range": 92
+      },
+      "saturation": {
+        "range": 0.38
+      },
+      "value": {
+        "range": 0.87
+      }
+    },
+    {
+      "hue": {
+        "range": 116
+      },
+      "saturation": {
+        "range": 0.73
+      },
+      "value": {
+        "range": 0.63
+      }
+    },
+    {
+      "hue": {
+        "range": 1
+      },
+      "saturation": {
+        "range": 0.39
+      },
+      "value": {
+        "range": 0.98
+      }
+    },
+    {
+      "hue": {
+        "range": 359
+      },
+      "saturation": {
+        "range": 0.89
+      },
+      "value": {
+        "range": 0.89
+      }
+    },
+    {
+      "hue": {
+        "range": 34
+      },
+      "saturation": {
+        "range": 0.59
+      },
+      "value": {
+        "range": 0.99
+      }
+    },
+    {
+      "hue": {
+        "range": 30
+      },
+      "saturation": {
+        "range": 1
+      },
+      "value": {
+        "range": 1
+      }
+    },
+    {
+      "hue": {
+        "range": 280
+      },
+      "saturation": {
+        "range": 0.17
+      },
+      "value": {
+        "range": 0.84
+      }
+    },
+    {
+      "hue": {
+        "range": 269
+      },
+      "saturation": {
+        "range": 0.60
+      },
+      "value": {
+        "range": 0.60
+      }
+    },
+    {
+      "hue": {
+        "range": 60
+      },
+      "saturation": {
+        "range": 0.4
+      },
+      "value": {
+        "range": 1
+      }
+    },
+    {
+      "hue": {
+        "range": 21
+      },
+      "saturation": {
+        "range": 0.77
+      },
+      "value": {
+        "range": 0.69
+      }
+    }
+  ]
+}

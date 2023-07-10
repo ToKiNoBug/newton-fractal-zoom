@@ -1,0 +1,150 @@
+{
+  "color_for_nan": [
+    0,
+    0,
+    0
+  ],
+  /*
+  ,{
+      "hue": {
+        "range":,
+        "source": "magnitude"
+      },
+      "saturation": {
+        "range":,
+        "source": "magnitude"
+      },
+      "value": {
+        "range":,
+        "source": "magnitude"
+      }
+    }
+  */
+
+
+  /*
+  ,{
+      "hue": {
+        "range":
+      },
+      "saturation": {
+        "range":
+      },
+      "value": {
+        "range":
+      }
+    }
+  */
+  "point_methods": [
+    {
+      "hue": {
+        "range": 54
+      },
+      "saturation": {
+        "range": 0.86
+      },
+      "value": {
+        "range": 0.99
+      }
+    },
+    {
+      "hue": {
+        "range": 74
+      },
+      "saturation": {
+        "range": 0.81
+      },
+      "value": {
+        "range": 0.87
+      }
+    },
+    {
+      "hue": {
+        "range": 110
+      },
+      "saturation": {
+        "range": 0.57
+      },
+      "value": {
+        "range": 0.8
+      }
+    },
+    {
+      "hue": {
+        "range": 151
+      },
+      "saturation": {
+        "range": 0.71
+      },
+      "value": {
+        "range": 0.72
+      }
+    },
+    {
+      "hue": {
+        "range": 170
+      },
+      "saturation": {
+        "range": 0.81
+      },
+      "value": {
+        "range": 0.61
+      }
+    },
+    {
+      "hue": {
+        "range": 186
+      },
+      "saturation": {
+        "range": 0.74
+      },
+      "value": {
+        "range": 0.55
+      }
+    },
+    {
+      "hue": {
+        "range": 205
+      },
+      "saturation": {
+        "range": 0.66
+      },
+      "value": {
+        "range": 0.55
+      }
+    },
+    {
+      "hue": {
+        "range": 231
+      },
+      "saturation": {
+        "range": 0.55
+      },
+      "value": {
+        "range": 0.54
+      }
+    },
+    {
+      "hue": {
+        "range": 264
+      },
+      "saturation": {
+        "range": 0.67
+      },
+      "value": {
+        "range": 0.47
+      }
+    },
+    {
+      "hue": {
+        "range": 288
+      },
+      "saturation": {
+        "range": 0.99
+      },
+      "value": {
+        "range": 0.33
+      }
+    }
+  ]
+}
