@@ -89,6 +89,7 @@ std::optional<real_t> decode(const njson& nj) noexcept {
 #endif
       } else {
         thread_local std::stringstream ss;
+        ss.clear();
         ss << str;
         real_t out;
         ss >> out;
