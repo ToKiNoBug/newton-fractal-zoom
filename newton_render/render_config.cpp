@@ -105,7 +105,8 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
       ret.saturation = mapping.value();
       auto err = check_saturation_value(ret.saturation);
       if (!err) {
-        fmt::format("The range of saturation is invalid: {}", err.error());
+        return tl::make_unexpected(
+            fmt::format("The range of saturation is invalid: {}", err.error()));
       }
     }
     {
@@ -117,7 +118,8 @@ tl::expected<render_config::render_method, std::string> parse_render_method(
       ret.value = mapping.value();
       auto err = check_saturation_value(ret.value);
       if (!err) {
-        fmt::format("The range of value is invalid: {}", err.error());
+        return tl::make_unexpected(
+            fmt::format("The range of value is invalid: {}", err.error()));
       }
     }
   } catch (std::exception &e) {
