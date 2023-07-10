@@ -54,4 +54,4 @@ add_subdirectory(nftool)
 add_subdirectory(newton_zoomer)
 add_subdirectory(nfvideo)
 
-include(CPack)
+include(cmake/pack.cmake)
