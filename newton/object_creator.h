@@ -47,7 +47,12 @@ class object_creator {
                        int precision) const noexcept = 0;
 
   [[nodiscard]] virtual tl::expected<njson, std::string> save_window(
-      const fractal_utils::wind_base& wb) const noexcept = 0;
+      const fractal_utils::wind_base& wb,
+      float_save_format fsf) const noexcept = 0;
+  [[deprecated]] [[nodiscard]] tl::expected<njson, std::string> save_window(
+      const fractal_utils::wind_base& wb) const noexcept {
+    return this->save_window(wb, float_save_format::hex_string);
+  }
 
   [[nodiscard]] virtual tl::expected<std::string, std::string> encode_centerhex(
       const fractal_utils::wind_base& wb) const noexcept = 0;
@@ -56,7 +61,11 @@ class object_creator {
       std::string_view hex, fractal_utils::wind_base& wb) const noexcept = 0;
 
   [[nodiscard]] virtual njson::array_t save_equation(
-      const newton_equation_base&) const noexcept;
+      const newton_equation_base&, float_save_format fsf) const noexcept;
+  [[deprecated]] [[nodiscard]] njson::array_t save_equation(
+      const newton_equation_base& neb) const noexcept {
+    return this->save_equation(neb, float_save_format::hex_string);
+  }
 
   [[nodiscard]] virtual std::unique_ptr<object_creator> copy()
       const noexcept = 0;

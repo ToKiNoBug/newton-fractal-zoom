@@ -115,6 +115,8 @@ tl::expected<meta_data, std::string> load_metadata_from_file(
     std::string_view filename, bool ignore_compute_objects) noexcept;
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept;
+tl::expected<njson, std::string> save_metadata(
+    const meta_data& m, float_save_format serialization_type) noexcept;
 };  // namespace newton_fractal
 
 namespace fu = fractal_utils;

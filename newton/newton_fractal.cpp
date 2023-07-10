@@ -226,6 +226,11 @@ tl::expected<meta_data, std::string> load_metadata_from_file(
 }
 
 tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
+  return save_metadata(m, float_save_format::directly);
+}
+
+tl::expected<njson, std::string> save_metadata(const meta_data& m,
+                                               float_save_format fsf) noexcept {
   if (std::get<0>(m.compute_objs).obj_creator == nullptr) {
     return tl::make_unexpected("The object creator pointer is null.");
   }
@@ -246,7 +251,7 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
   {
     auto wind =
         std::get<0>(m.compute_objs)
-            .obj_creator->save_window(*std::get<0>(m.compute_objs).window);
+            .obj_creator->save_window(*std::get<0>(m.compute_objs).window, fsf);
     if (!wind.has_value()) {
       return tl::make_unexpected(
           fmt::format("Failed to save window because {}", wind.error()));
@@ -254,9 +259,9 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m) noexcept {
     ret.emplace("window", std::move(wind.value()));
   }
   {
-    auto points =
-        std::get<0>(m.compute_objs)
-            .obj_creator->save_equation(*std::get<0>(m.compute_objs).equation);
+    auto points = std::get<0>(m.compute_objs)
+                      .obj_creator->save_equation(
+                          *std::get<0>(m.compute_objs).equation, fsf);
     ret.emplace("points", std::move(points));
   }
 

@@ -126,6 +126,50 @@ void compute_norm2(const complex_t& a, real_t& b) noexcept {
   // complex_t temp = a * (-a);
   b = a.real() * a.real() + a.imag() * a.imag();
 }
+
+namespace internal {
+
+template <typename float_t>
+njson save_float_by_format(const float_t& number, float_save_format fsf,
+                           std::stringstream& ss,
+                           std::vector<uint8_t>& bin) noexcept {
+  njson ret;
+  switch (fsf) {
+    case float_save_format::directly:
+      ret = double(number);
+      break;
+    case float_save_format::hex_string: {
+      std::string result;
+      encode_float_to_hex(number, bin, result);
+      ret = result;
+      break;
+    }
+    case float_save_format::formatted_string: {
+      ss.clear();
+#ifdef __GNUC__
+      constexpr bool is_quadmath = std::is_same_v<float_t, __float128>;
+#else
+      constexpr bool is_quadmath = false;
+#endif
+
+      if constexpr (is_quadmath) {
+        ss << double(number);
+      } else {
+        ss << number;
+      }
+
+      std::string result;
+      ss >> result;
+      ret = result;
+      break;
+    }
+  }
+
+  return ret;
+}
+
+}  // namespace internal
+
 template <typename complex_t>
 using point_list = std::vector<complex_t>;
 
@@ -402,20 +446,24 @@ class newton_equation : public newton_equation_base {
     }
   }
 
-  [[nodiscard]] njson::array_t to_json() const noexcept override {
+  [[nodiscard]] njson::array_t to_json(
+      float_save_format fsf) const noexcept override {
     njson::array_t ret;
     ret.reserve(this->order());
 
     std::vector<uint8_t> bin;
-    std::string hex;
+    std::stringstream ss;
+    // std::string hex;
 
     for (const auto& cplx : this->_points) {
       njson ::array_t temp;
       temp.reserve(2);
-      internal::encode_float_to_hex<real_type>(cplx.real(), bin, hex);
-      temp.emplace_back(hex);
-      internal::encode_float_to_hex<real_type>(cplx.imag(), bin, hex);
-      temp.emplace_back(hex);
+      // internal::encode_float_to_hex<real_type>(cplx.real(), bin, hex);
+      temp.emplace_back(
+          internal::save_float_by_format<real_type>(cplx.real(), fsf, ss, bin));
+      // internal::encode_float_to_hex<real_type>(cplx.imag(), bin, hex);
+      temp.emplace_back(
+          internal::save_float_by_format<real_type>(cplx.imag(), fsf, ss, bin));
 
       ret.emplace_back(std::move(temp));
     }

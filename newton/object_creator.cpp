@@ -148,7 +148,8 @@ class object_creator_default_impl : public object_creator {
   }
 
   [[nodiscard]] tl::expected<njson, std::string> save_window(
-      const fractal_utils::wind_base& wb) const noexcept override {
+      const fractal_utils::wind_base& wb,
+      float_save_format fsf) const noexcept override {
     if (!wb.float_type_matches<real_type>()) {
       return tl::make_unexpected(
           fmt::format("Type of floating point number mismatch."));
@@ -158,24 +159,27 @@ class object_creator_default_impl : public object_creator {
         dynamic_cast<const fractal_utils::center_wind<real_type>&>(wb);
 
     std::vector<uint8_t> bin;
-    std::string hex;
+    std::stringstream ss;
     njson ret;
 
     {
       njson::array_t center;
       center.resize(2);
       for (size_t i = 0; i < 2; i++) {
-        internal::encode_float_to_hex(wind.center[i], bin, hex);
-        center[i] = hex;
+        // internal::encode_float_to_hex(wind.center[i], bin, hex);
+        center[i] =
+            internal::save_float_by_format(wind.center[i], fsf, ss, bin);
       }
       ret.emplace("center", std::move(center));
     }
 
-    internal::encode_float_to_hex(wind.x_span, bin, hex);
-    ret.emplace("x_span", hex);
+    // internal::encode_float_to_hex(wind.x_span, bin, hex);
+    ret.emplace("x_span",
+                internal::save_float_by_format(wind.x_span, fsf, ss, bin));
 
-    internal::encode_float_to_hex(wind.y_span, bin, hex);
-    ret.emplace("y_span", hex);
+    // internal::encode_float_to_hex(wind.y_span, bin, hex);
+    ret.emplace("y_span",
+                internal::save_float_by_format(wind.y_span, fsf, ss, bin));
 
     return ret;
   }
@@ -590,8 +594,8 @@ object_creator::create(fractal_utils::float_backend_lib backend,
 }
 
 njson::array_t object_creator::save_equation(
-    const newton_equation_base& neb) const noexcept {
-  return neb.to_json();
+    const newton_equation_base& neb, float_save_format fsf) const noexcept {
+  return neb.to_json(fsf);
 }
 
 }  // namespace newton_fractal

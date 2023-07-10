@@ -20,6 +20,12 @@ using njson = nlohmann::json;
 
 namespace newton_fractal {
 
+enum class float_save_format : uint8_t {
+  directly,
+  hex_string,
+  formatted_string
+};
+
 class newton_equation_base {
  public:
   virtual ~newton_equation_base() = default;
@@ -60,7 +66,8 @@ class newton_equation_base {
 
   virtual void clear() & noexcept = 0;
 
-  [[nodiscard]] virtual njson::array_t to_json() const noexcept = 0;
+  [[nodiscard]] virtual njson::array_t to_json(
+      float_save_format fsf) const noexcept = 0;
 
   [[nodiscard]] virtual std::unique_ptr<newton_equation_base> copy()
       const noexcept = 0;
