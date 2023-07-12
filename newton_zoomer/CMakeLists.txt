@@ -21,6 +21,9 @@ add_executable(nfzoom_launcher nfzoom_launcher.cpp launcher_wind.cpp launcher_wi
 target_link_libraries(nfzoom_launcher PRIVATE
     tl::expected
     Qt6::Widgets)
+set_target_properties(nfzoom_launcher PROPERTIES
+    WIN32_EXECUTABLE ON)
+
 file(GLOB compute_presets "${CMAKE_SOURCE_DIR}/compute_tasks/*.json")
 file(COPY ${compute_presets} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/../compute_presets")
 file(GLOB render_json_files "${CMAKE_SOURCE_DIR}/render_jsons/*.json")
