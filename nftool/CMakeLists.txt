@@ -20,3 +20,9 @@ target_include_directories(nftool PRIVATE
 
 install(TARGETS nftool
     RUNTIME DESTINATION bin)
+
+if (${WIN32})
+    DLLD_add_deploy(nftool
+        BUILD_MODE
+        INSTALL_MODE INSTALL_DESTINATION bin)
+endif ()
