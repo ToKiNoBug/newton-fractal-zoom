@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(newton_fractal_zoom VERSION 0.2)
+project(newton_fractal_zoom VERSION 0.2.1)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
