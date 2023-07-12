@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   capp.set_version_flag("--version", NEWTON_FRACTAL_VERSION_STR);
 
   std::string compute_src{"../compute_presets/double-p3.json"};
-  std::string render_config{"../render_presets/plasma-9.json"};
+  std::string render_config{"../render_presets/plasma-10.json"};
   int scale{1};
   uint32_t threads{std::thread::hardware_concurrency()};
   bool auto_precision{false};
