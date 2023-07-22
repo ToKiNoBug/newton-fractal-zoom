@@ -204,8 +204,19 @@ void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
 }
 
 void newton_zoomer::refresh_range_display() & noexcept {
+  {
+    //    QImage null_img{QSize{img_width, img_height},
+    //                    QImage::Format::Format_ARGB32};
+    //    null_img.fill(0x00FFFFFF);
+    //    this->label_widget()->setPixmap(QPixmap::fromImage(null_img));
+  }
   zoom_window::refresh_range_display();
   auto lb = dynamic_cast<newton_label *>(this->label_widget());
+  if (lb->pixmap().isNull()) {
+    const int img_height = int(this->rows() * this->scale());
+    const int img_width = int(this->cols() * this->scale());
+    lb->resize(img_width, img_height);
+  }
   lb->reset(*this->template_metadata().equation());
   lb->repaint_points(*this->current_result().wind);
 }
@@ -214,6 +225,7 @@ void newton_zoomer::on_btn_revert_clicked() {
   zoom_window::on_btn_revert_clicked();
   fmt::print("size of stack: {}\n", this->m_window_stack.size());
 }
+
 void newton_zoomer::on_btn_repaint_clicked() {
   zoom_window::on_btn_repaint_clicked();
   fmt::print("size of stack: {}\n", this->m_window_stack.size());
