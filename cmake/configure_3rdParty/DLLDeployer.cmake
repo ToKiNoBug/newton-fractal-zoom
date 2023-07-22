@@ -9,8 +9,10 @@ set(QD_file ${DLLD_dir}/QtDeployer.cmake)
 
 
 #file(REMOVE ${DLLD_file} ${QD_file})
+message(STATUS "Downloading DLLDeployer.cmake...")
 file(DOWNLOAD https://github.com/ToKiNoBug/DLLDeployer/releases/download/v1.1/DLLDeployer.cmake
     ${DLLD_file} SHOW_PROGRESS)
+message(STATUS "Downloading QtDeployer.cmake...")
 file(DOWNLOAD https://github.com/ToKiNoBug/DLLDeployer/releases/download/v1.1/QtDeployer.cmake
     ${QD_file} SHOW_PROGRESS)
 
