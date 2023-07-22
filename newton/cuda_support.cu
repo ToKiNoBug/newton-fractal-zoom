@@ -31,7 +31,7 @@ __global__ void run_computation(const thrust::complex<float_t> *points,
                                 thrust::complex<float_t> r0c0, float_t r_unit,
                                 float_t c_unit, bool *dst_has_value,
                                 uint8_t *dst_nearest_index,
-                                thrust::complex<float_t> *dst_complex_diff,
+                                thrust::complex<double> *dst_complex_diff,
                                 int iteration_times) {
   const auto global_offset = blockDim.x * blockIdx.x + threadIdx.x;
   if (global_offset >= rows * cols) {
@@ -72,7 +72,7 @@ class cuda_equation_impl : public cuda_computer<float_t> {
 
   thrust::device_vector<bool> m_has_value_device;
   thrust::device_vector<uint8_t> m_nearest_index_device;
-  thrust::device_vector<thrust::complex<float_t>> m_complex_diff_device;
+  thrust::device_vector<thrust::complex<double>> m_complex_diff_device;
 
  public:
   using real_t = float_t;

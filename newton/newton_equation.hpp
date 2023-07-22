@@ -123,7 +123,7 @@ inline void format_complex(const std::complex<__float128>& z,
 
 template <typename complex_t, typename real_t>
 inline void compute_norm2(const complex_t& a, real_t& b) noexcept {
-  internal::compute_functions<real_t, complex_t>(a, b);
+  internal::compute_functions<real_t, complex_t>::compute_norm2(a, b);
 }
 
 namespace internal {
