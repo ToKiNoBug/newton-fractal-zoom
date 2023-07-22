@@ -1,0 +1,51 @@
+{
+  "unused": [
+    {
+      "backend": "mpfr",
+      "precision": 71
+    },
+    {
+      "backend": "mpfr",
+      "precision": 147
+    },
+    {
+      "backend": "boost",
+      "precision": 8
+    },
+    {
+      "backend": "boost",
+      "precision": 16
+    },
+    {
+      "backend": "standard",
+      "precision": 2
+    }
+  ],
+  "backend": "standard",
+  "precision": 1,
+  "window": {
+    "center": [
+      0,
+      0
+    ],
+    "x_span": 15,
+    "y_span": 10
+  },
+  "points": [
+    [
+      -0.5,
+      0.866666666
+    ],
+    [
+      -0.5,
+      -0.86666666
+    ],
+    [
+      1,
+      0
+    ]
+  ],
+  "rows": 720,
+  "cols": 1080,
+  "iteration": 100
+}
