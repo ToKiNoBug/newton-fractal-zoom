@@ -71,18 +71,39 @@ tl::expected<void, QString> launcher_wind::grab_render_configs(
 }
 
 void launcher_wind::on_pb_start_clicked() noexcept {
-  const auto compute_src = this->ui->cb_compute->currentData().toString();
-  const auto render_json = this->ui->cb_render->currentData().toString();
+  auto compute_src = this->ui->cb_compute->currentData().toString();
+  auto render_json = this->ui->cb_render->currentData().toString();
+  //  if (compute_src.contains(' ')) {
+  //    compute_src = QStringLiteral("\"%1\"").arg(compute_src);
+  //  }
+  //  if (render_json.contains(' ')) {
+  //    render_json = QStringLiteral("\"%1\"").arg(render_json);
+  //  }
 
-  QString args = QStringLiteral("%1 --rj %2 --scale %3")
+#if WIN32
+  if (compute_src.contains("mpfr")) {
+    auto choice = QMessageBox::warning(
+        this, "Incorrect computation config",
+        QStringLiteral("%1 seems to require mpfr, which is only available on "
+                       "Linux. nfzoom may not be launched successfully, are "
+                       "you sure to continue?"),
+        QMessageBox::StandardButtons{QMessageBox::StandardButton::Yes,
+                                     QMessageBox::StandardButton::No});
+    if (choice != QMessageBox::StandardButton::Yes) {
+      return;
+    }
+  }
+#endif
+
+  QString args = QStringLiteral("%1#--rj#%2#--scale#%3")
                      .arg(compute_src, render_json)
                      .arg(this->ui->sb_scale->value());
 
-  auto arg_list = args.split(' ');
+  auto arg_list = args.split('#');
 
   // auto process = new QProcess{this};
 
-  auto ok = QProcess::startDetached("nfzoom", arg_list, "");
+  auto ok = QProcess::startDetached("./nfzoom", arg_list, "");
   if (!ok) {
     QMessageBox::warning(this, "Failed to start detached process",
                          QStringLiteral("arguments: %1").arg(args));
