@@ -1,6 +1,7 @@
 
 #include "mpc_support.h"
 #include <sstream>
+#include <fmt/format.h>
 
 namespace nf = newton_fractal;
 using nf::newton_equation_mpc;

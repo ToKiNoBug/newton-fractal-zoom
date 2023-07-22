@@ -5,6 +5,7 @@
 #ifndef NEWTON_FRACTAL_ZOOM_CUDA_SUPPORT_CUH
 #define NEWTON_FRACTAL_ZOOM_CUDA_SUPPORT_CUH
 
+#include <tl/expected.hpp>
 #include "newton_equation_base.h"
 
 namespace newton_fractal {

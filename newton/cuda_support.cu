@@ -1,13 +1,14 @@
 //
 // Created by David on 2023/7/22.
 //
+#define JSON_HAS_RANGES false
 
-#include "cuda_support.cuh"
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/complex.h>
 #include <exception>
 #include "computation.hpp"
+#include "cuda_support.cuh"
 // #include "newton_equation.hpp"
 
 namespace newton_fractal {

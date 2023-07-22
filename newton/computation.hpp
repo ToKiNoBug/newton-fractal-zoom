@@ -92,7 +92,7 @@ struct compute_functions {
   }
 
   // template <typename real_t>
-  [[nodiscard]] NF_HOST_DEVICE_FUN static inline bool is_normal(
+  [[nodiscard]] NF_HOST_DEVICE_FUN static inline bool is_normal_real(
       const real_t& n) noexcept {
     if (n != n) {  // nan
       return false;
@@ -105,9 +105,9 @@ struct compute_functions {
   }
 
   // template <typename real_t, typename complex_t>
-  [[nodiscard]] NF_HOST_DEVICE_FUN static inline bool is_normal(
+  [[nodiscard]] NF_HOST_DEVICE_FUN static inline bool is_normal_complex(
       const complex_t& z) noexcept {
-    return is_normal(real_t{z.real()}) && is_normal(real_t{z.imag()});
+    return is_normal_real(real_t{z.real()}) && is_normal_real(real_t{z.imag()});
   }
 
   // template <typename real_t, typename complex_t>
@@ -116,7 +116,7 @@ struct compute_functions {
       complex_t& z, int iteration_times,
       newton_equation_base::single_result& result_dest) noexcept {
     iterate_n(parameters, order, z, iteration_times);
-    if (!is_normal(z)) {
+    if (!is_normal_complex(z)) {
       return false;
     }
     // const int order = parameters.size();
