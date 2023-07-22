@@ -10,15 +10,17 @@ add_library(newton_fractal STATIC
 
     mpc_support.h
     object_creator.cpp
-    object_creator.h)
+    object_creator.h cuda_support.cu cuda_support.cuh computation.hpp cuda_support.cpp)
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     if (${MSVC})
-        target_compile_options(newton_fractal PRIVATE "/fp:fast")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast")
+        #target_compile_options(newton_fractal PRIVATE "/fp:fast")
     else ()
-        target_compile_options(newton_fractal PRIVATE "-Ofast")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
+        #target_compile_options(newton_fractal PRIVATE "-Ofast")
     endif ()
 endif ()
 

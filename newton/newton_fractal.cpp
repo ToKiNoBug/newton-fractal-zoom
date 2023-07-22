@@ -164,9 +164,14 @@ tl::expected<meta_data, std::string> load_metadata(
       return ret;
     }
 
+    bool gpu = false;
+    if (nj.contains("gpu")) {
+      gpu = nj.at("gpu");
+    }
+
     meta_data::compute_objects cobj;
     {
-      auto objc = object_creator::create(backend.value(), precision);
+      auto objc = object_creator::create(backend.value(), precision, gpu);
       if (!objc.has_value()) {
         return tl::make_unexpected(fmt::format(
             "Failed to create object_creator. Detail: {}", objc.error()));
@@ -247,6 +252,7 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m,
                   std::get<0>(m.compute_objs).obj_creator->backend_lib()));
   ret.emplace("precision",
               std::get<0>(m.compute_objs).obj_creator->precision());
+  ret.emplace("gpu", m.gpu());
 
   {
     auto wind =

@@ -1,7 +1,4 @@
 find_package(fractal_utils COMPONENTS png_utils render_utils REQUIRED)
-if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
-    set(CMAKE_CUDA_FLAGS --expt-relaxed-constexpr)
-endif ()
 
 add_library(newton_render STATIC
     newton_render.h

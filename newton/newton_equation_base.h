@@ -36,6 +36,8 @@ class newton_equation_base {
 
   [[nodiscard]] virtual std::complex<double> point_at(
       int idx) const noexcept = 0;
+  [[nodiscard]] virtual std::complex<double> parameter_at(
+      int idx) const noexcept = 0;
 
   virtual void reset(
       std::span<const std::complex<double>> points) & noexcept = 0;
@@ -45,7 +47,7 @@ class newton_equation_base {
   */
 
   struct single_result {
-    int nearest_point_idx;
+    int nearest_point_idx{-1};
     std::complex<double> difference;
   };
 

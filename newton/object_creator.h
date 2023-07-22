@@ -19,13 +19,16 @@ class object_creator {
   virtual ~object_creator() = default;
 
   static tl::expected<std::unique_ptr<object_creator>, std::string> create(
-      fractal_utils::float_backend_lib backend, int precision) noexcept;
+      fractal_utils::float_backend_lib backend, int precision,
+      bool gpu) noexcept;
 
   [[nodiscard]] virtual fractal_utils::float_backend_lib backend_lib()
       const noexcept = 0;
   [[nodiscard]] virtual int precision() const noexcept = 0;
 
   [[nodiscard]] virtual bool is_fixed_precision() const noexcept = 0;
+
+  [[nodiscard]] virtual bool gpu() const noexcept = 0;
 
   [[nodiscard]] virtual tl::expected<std::unique_ptr<fractal_utils::wind_base>,
                                      std::string>

@@ -14,13 +14,12 @@
 #include <span>
 #include <variant>
 #include <vector>
-#include <fmt/format.h>
 #include <iterator>
 #include <string>
 #include <nlohmann/json.hpp>
-#include <fmt/format.h>
 #include "newton_equation_base.h"
 #include <sstream>
+#include "computation.hpp"
 
 #ifdef __GNUC__
 #include <quadmath.h>
@@ -123,9 +122,8 @@ inline void format_complex(const std::complex<__float128>& z,
 #endif
 
 template <typename complex_t, typename real_t>
-void compute_norm2(const complex_t& a, real_t& b) noexcept {
-  // complex_t temp = a * (-a);
-  b = a.real() * a.real() + a.imag() * a.imag();
+inline void compute_norm2(const complex_t& a, real_t& b) noexcept {
+  internal::compute_functions<real_t, complex_t>(a, b);
 }
 
 namespace internal {
@@ -214,7 +212,7 @@ class newton_equation : public newton_equation_base {
   using complex_type = complex_t;
   using real_type = real_t;
 
-  explicit newton_equation(std::span<const complex_t>& points) {
+  explicit newton_equation(std::span<const complex_t> points) {
     this->_parameters.reserve(points.size());
     for (const auto& p : points) {
       this->add_point(p);
@@ -244,6 +242,12 @@ class newton_equation : public newton_equation_base {
             (double)this->_points[idx].imag()};
   }
 
+  [[nodiscard]] std::complex<double> parameter_at(
+      int idx) const noexcept override {
+    return {(double)this->_parameters[idx].real(),
+            (double)this->_parameters[idx].imag()};
+  }
+
   void add_point(const complex_t& p) noexcept {
     this->_points.emplace_back(p);
     const int order_before = this->order();
@@ -271,8 +275,8 @@ class newton_equation : public newton_equation_base {
     }
 
     std::stringstream ss;
-
-    ss << fmt::format("z^{}", this->order());
+    // ss << fmt::format("z^{}", this->order());
+    ss << "z^" << this->order();
 
     for (int i = 0; i < this->parameters().size(); i++) {
       const int current_order = this->order() - i - 1;
@@ -322,87 +326,98 @@ class newton_equation : public newton_equation_base {
   }
 
   complex_t iterate(const complex_t& z) const noexcept {
-    assert(this->order() > 1);
-
-    complex_t f{this->item_at_order(0)}, df{this->item_at_order(1)};
-
-    complex_t z_power = z;
-    complex_t temp;
-    for (int n = 1; n < this->order(); n++) {
-      {
-        temp = this->item_at_order(n) * z_power;
-        f += temp;
-      }
-      {
-        if (n + 1 >= this->order()) {
-          temp = z_power;
-          temp *= (n + 1);
-        } else {
-          temp = this->item_at_order(n + 1) * z_power;
-          temp *= (n + 1);
-        }
-        df += temp;
-      }
-      z_power *= z;
-    }
-
-    f += z_power;
-
-    return z - (f / df);
+    return internal::compute_functions<real_t, complex_t>::iterate(
+        this->_parameters, z);
+    //    assert(this->order() > 1);
+    //
+    //    complex_t f{this->item_at_order(0)}, df{this->item_at_order(1)};
+    //
+    //    complex_t z_power = z;
+    //    complex_t temp;
+    //    for (int n = 1; n < this->order(); n++) {
+    //      {
+    //        temp = this->item_at_order(n) * z_power;
+    //        f += temp;
+    //      }
+    //      {
+    //        if (n + 1 >= this->order()) {
+    //          temp = z_power;
+    //          temp *= (n + 1);
+    //        } else {
+    //          temp = this->item_at_order(n + 1) * z_power;
+    //          temp *= (n + 1);
+    //        }
+    //        df += temp;
+    //      }
+    //      z_power *= z;
+    //    }
+    //
+    //    f += z_power;
+    //
+    //    return z - (f / df);
   }
 
   void iterate_n(complex_t& z, int n) const noexcept {
-    assert(n >= 0);
-    for (int i = 0; i < n; i++) {
-      z = this->iterate(z);
-    }
+    //    assert(n >= 0);
+    //    for (int i = 0; i < n; i++) {
+    //      z = this->iterate(z);
+    //    }
+    internal::compute_functions<real_t, complex_t>::iterate_n(this->_parameters,
+                                                              z, n);
   }
 
   void iterate_n(std::any& z, int n) const noexcept {
     this->iterate_n(*std::any_cast<complex_t>(&z), n);
   }
 
-  [[nodiscard]] static inline bool is_normal(const real_t& n) noexcept {
-    if (n != n) {  // nan
-      return false;
-    }
-    //    const real_t temp = n * 0;
-    //    if (temp != temp) {  // inf*0==nan
-    //      return false;
-    //    }
-    return true;
-  }
-
-  [[nodiscard]] static inline bool is_normal(const complex_t& z) noexcept {
-    return is_normal(real_t{z.real()}) && is_normal(real_t{z.imag()});
-  }
+  //  [[nodiscard]] static inline bool is_normal(const real_t& n) noexcept {
+  //    if (n != n) {  // nan
+  //      return false;
+  //    }
+  //    //    const real_t temp = n * 0;
+  //    //    if (temp != temp) {  // inf*0==nan
+  //    //      return false;
+  //    //    }
+  //    return true;
+  //  }
+  //
+  //  [[nodiscard]] static inline bool is_normal(const complex_t& z) noexcept {
+  //    return is_normal(real_t{z.real()}) && is_normal(real_t{z.imag()});
+  //  }
 
   std::optional<single_result> compute_single(
       complex_t& z, int iteration_times) const noexcept {
     assert(this->_parameters.size() == this->_points.size());
-    this->iterate_n(z, iteration_times);
-    if (!is_normal(z)) {
-      return std::nullopt;
+    single_result result;
+    if (internal::compute_functions<real_t, complex_t>::compute_single(
+            this->_parameters, this->_points, z, iteration_times, result)) {
+      return result;
     }
-
-    int min_idx = -1;
-    complex_t min_diff;
-    real_t min_norm2{INFINITY};
-    for (int idx = 0; idx < this->order(); idx++) {
-      complex_t diff = z - this->_points[idx];
-      real_t diff_norm2;
-      compute_norm2(diff, diff_norm2);
-
-      if (diff_norm2 < min_norm2) {
-        min_idx = idx;
-        min_diff = diff;
-        min_norm2 = diff_norm2;
-      }
-    }
-
-    return single_result{
-        min_idx,
-        std::complex<double>{double(min_diff.real()), double(min_diff.imag())}};
+    return std::nullopt;
+    //    this->iterate_n(z, iteration_times);
+    //    if (!internal::is_normal(z)) {
+    //      return std::nullopt;
+    //    }
+    //
+    //    int min_idx = -1;
+    //    complex_t min_diff;
+    //    real_t min_norm2{INFINITY};
+    //    for (int idx = 0; idx < this->order(); idx++) {
+    //      complex_t diff = z - this->_points[idx];
+    //      real_t diff_norm2;
+    //      compute_norm2(diff, diff_norm2);
+    //
+    //      if (diff_norm2 < min_norm2) {
+    //        min_idx = idx;
+    //        min_diff = diff;
+    //        min_norm2 = diff_norm2;
+    //      }
+    //    }
+    //
+    //    return single_result{
+    //        min_idx,
+    //        std::complex<double>{double(min_diff.real()),
+    //        double(min_diff.imag())}};
   }
 
   /*
