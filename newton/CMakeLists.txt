@@ -5,12 +5,22 @@ add_library(newton_fractal STATIC
     newton_fractal.cpp
 
     newton_equation_base.cpp
+    computation.hpp
     newton_equation_base.h
     newton_equation.hpp
 
     mpc_support.h
     object_creator.cpp
-    object_creator.h cuda_support.cu cuda_support.cuh computation.hpp cuda_support.cpp)
+    object_creator.h
+
+    cuda_support.cu
+    cuda_support.cuh
+    cuda_support.cpp
+
+    OpenCL_support.cpp
+    OpenCL_support.h
+    #newton_fractal_computation.cl
+    )
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
@@ -33,6 +43,11 @@ find_package(fractal_utils COMPONENTS
     #png_utils
     multiprecision_utils
     REQUIRED)
+find_package(OpenCL 3.0 REQUIRED)
+
+add_resource_config_time(cl_source_file_resource
+    VAR newton_fractal_computation_cl
+    newton_fractal_computation.cl)
 
 target_link_libraries(newton_fractal PUBLIC
     fmt::fmt
@@ -41,6 +56,8 @@ target_link_libraries(newton_fractal PUBLIC
     fractal_utils::multiprecision_utils
     OpenMP::OpenMP_CXX
     magic_enum::magic_enum
+    OpenCL::OpenCL
+    cl_source_file_resource
     )
 
 target_include_directories(newton_fractal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -68,6 +85,20 @@ add_executable(test_metdainfo test_metdainfo.cpp)
 target_link_libraries(test_metdainfo PRIVATE newton_fractal)
 target_include_directories(test_metdainfo PRIVATE ${NF_cli11_include_dir})
 
+cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH cxx_compiler_parent_dir)
+cmake_path(GET cxx_compiler_parent_dir PARENT_PATH cxx_compiler_parent_dir)
+#message(STATUS "cxx_compiler_parent_dir = ${cxx_compiler_parent_dir}")
+list(APPEND CMAKE_PREFIX_PATH ${cxx_compiler_parent_dir})
+find_program(clang_exe
+    clang)
+if (clang_exe)
+    add_custom_target(test_opencl_sources ALL
+        COMMAND ${clang_exe} "${CMAKE_CURRENT_SOURCE_DIR}/newton_fractal_computation.cl" -c -emit-llvm -o newton_fractal_computation.bc
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        SOURCES newton_fractal_computation.cl
+        COMMENT "Build opencl sources with clang(test only)"
+        BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/newton_fractal_computation.bc")
+endif ()
 
 install(TARGETS newton_fractal
     LIBRARY DESTINATION lib

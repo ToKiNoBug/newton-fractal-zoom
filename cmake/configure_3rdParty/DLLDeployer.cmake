@@ -7,22 +7,6 @@ set(DLLD_dir "${CMAKE_BINARY_DIR}/3rdParty/DLLDeployer")
 set(DLLD_file ${DLLD_dir}/DLLDeployer.cmake)
 set(QD_file ${DLLD_dir}/QtDeployer.cmake)
 
-function(NF_Download url filename)
-    file(SIZE ${filename} size)
-    if (${size} GREATER 0)
-        message(STATUS "${filename} already exists, skip downloading.")
-        return()
-    endif ()
-
-    message(STATUS "Downloading ${filename} ...")
-    file(DOWNLOAD ${url} ${filename} SHOW_PROGRESS)
-
-    file(SIZE ${filename} size)
-    if (${size} LESS_EQUAL 0)
-        message(FATAL_ERROR "Failed to download ${filename}")
-    endif ()
-endfunction(NF_Download)
-
 
 ##file(REMOVE ${DLLD_file} ${QD_file})
 #message(STATUS "Downloading DLLDeployer.cmake...")
