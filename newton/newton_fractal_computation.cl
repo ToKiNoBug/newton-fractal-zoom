@@ -1,17 +1,55 @@
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+// #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
 // typedef float real_t;
 // typedef float _Complex complex_f32;
 // typedef double real_f64;
 // typedef  complex_f64;
+#ifdef cl_khr_fp64
+typedef double _Complex complex_difference_result_t;
+#else
+typedef float _Complex complex_difference_result_t;
+#endif
 
 typedef struct {
   int nearest_point_idx;
-  double _Complex difference;
+  complex_difference_result_t difference;
 } single_result;
 
 #define NF_OPENCL_MAKE_COMPUTE_FUNCTIONS_IMPL(real_t, complex_t, real_vec2_t,  \
                                               suffix)                          \
+                                                                               \
+  real_t compute_norm2##suffix(complex_t _z) {                                 \
+    real_vec2_t z = vload2(0, (const real_t*)&_z);                             \
+    return z[0] * z[0] + z[1] * z[1];                                          \
+  }                                                                            \
+                                                                               \
+  complex_t mult##suffix(complex_t _ab, complex_t _cd) {                       \
+    const real_vec2_t ab = vload2(0, (const real_t*)&_ab);                     \
+    const real_vec2_t cd = vload2(0, (const real_t*)&_cd);                     \
+    const real_t a = ab[0], b = ab[1];                                         \
+    const real_t c = cd[0], d = cd[1];                                         \
+    real_vec2_t result;                                                        \
+    result[0] = a * c - b * d;                                                 \
+    result[1] = b * c + a * d;                                                 \
+    return *((complex_t*)&result);                                             \
+  }                                                                            \
+                                                                               \
+  complex_t divide##suffix(complex_t _ab, complex_t _cd) {                     \
+    const real_t c2_plus_b2 = compute_norm2##suffix(_cd);                      \
+                                                                               \
+    const real_vec2_t ab = vload2(0, (const real_t*)&_ab);                     \
+    const real_vec2_t cd = vload2(0, (const real_t*)&_cd);                     \
+                                                                               \
+    const real_t a = ab[0], b = ab[1];                                         \
+    const real_t c = cd[0], d = cd[1];                                         \
+                                                                               \
+    real_vec2_t result;                                                        \
+    result[0] = a * c + b * d;                                                 \
+    result[1] = b * c - a * d;                                                 \
+    result /= c2_plus_b2;                                                      \
+    return *((complex_t*)&result);                                             \
+  }                                                                            \
+                                                                               \
   complex_t item_at_order##suffix(__global const complex_t* parameters,        \
                                   const int order, int _order) {               \
     return parameters[order - _order - 1];                                     \
@@ -26,27 +64,31 @@ typedef struct {
     complex_t z_power = z;                                                     \
     complex_t temp;                                                            \
                                                                                \
+    real_vec2_t* const temp_vec2 = (real_vec2_t*)&temp;                        \
+                                                                               \
     for (int n = 1; n < this_order; n++) {                                     \
       {                                                                        \
-        temp = item_at_order##suffix(parameters, order, n) * z_power;          \
+        temp = mult##suffix(item_at_order##suffix(parameters, order, n),       \
+                            z_power);                                          \
         f += temp;                                                             \
       }                                                                        \
       {                                                                        \
         if (n + 1 >= this_order) {                                             \
           temp = z_power;                                                      \
-          temp *= (n + 1);                                                     \
+          (*temp_vec2) *= (n + 1);                                             \
         } else {                                                               \
-          temp = item_at_order##suffix(parameters, order, n + 1) * z_power;    \
-          temp *= (n + 1);                                                     \
+          temp = mult##suffix(item_at_order##suffix(parameters, order, n + 1), \
+                              z_power);                                        \
+          (*temp_vec2) *= (n + 1);                                             \
         }                                                                      \
         df += temp;                                                            \
       }                                                                        \
-      z_power *= z;                                                            \
+      z_power = mult##suffix(z_power, z);                                      \
     }                                                                          \
                                                                                \
     f += z_power;                                                              \
                                                                                \
-    return z - (f / df);                                                       \
+    return z - divide##suffix(f, df);                                          \
   }                                                                            \
                                                                                \
   void iterate_n##suffix(__global const complex_t* parameters, int order,      \
@@ -61,11 +103,6 @@ typedef struct {
   bool is_normal_complex##suffix(complex_t z) {                                \
     real_vec2_t data = vload2(0, (const real_t*)&z);                           \
     return is_normal_real##suffix(data[0]) && is_normal_real##suffix(data[1]); \
-  }                                                                            \
-                                                                               \
-  real_t compute_norm2##suffix(complex_t _z) {                                 \
-    real_vec2_t z = vload2(0, (const real_t*)&_z);                             \
-    return z[0] * z[0] + z[1] * z[1];                                          \
   }                                                                            \
                                                                                \
   bool compute_single##suffix(                                                 \
@@ -102,15 +139,16 @@ typedef struct {
       int order, int rows, int cols, complex_t r0c0, real_t r_unit,            \
       real_t c_unit, __global bool* dst_has_value,                             \
       __global uint8* dst_nearest_index,                                       \
-      __global double _Complex* dst_complex_diff, int iteration_times) {       \
-    const size_t global_offset = get_global_id(0);                             \
+      __global complex_difference_result_t* dst_complex_diff,                  \
+      int iteration_times) {                                                   \
+    const uint global_offset = get_global_id(0);                               \
                                                                                \
     if (global_offset >= rows * cols) {                                        \
       return;                                                                  \
     }                                                                          \
                                                                                \
-    const size_t r = global_offset / cols;                                     \
-    const size_t c = global_offset % cols;                                     \
+    const uint r = global_offset / cols;                                       \
+    const uint c = global_offset % cols;                                       \
                                                                                \
     complex_t z = r0c0;                                                        \
     {                                                                          \
