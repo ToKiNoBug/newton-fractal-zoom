@@ -1,4 +1,4 @@
-#define NF_OPENCL
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
 // typedef float real_t;
 // typedef float _Complex complex_f32;
@@ -134,5 +134,10 @@ typedef struct {
 #define NF_OPENCL_MAKE_COMPUTE_FUNCTIONS(type) \
   NF_OPENCL_MAKE_COMPUTE_FUNCTIONS_IMPL(type, type _Complex, type##2, _##type)
 
+#ifndef NF_OPENCL_DISABLE_FP32
 NF_OPENCL_MAKE_COMPUTE_FUNCTIONS(float);
+#endif
+
+#ifndef NF_OPENCL_DISABLE_FP64
 NF_OPENCL_MAKE_COMPUTE_FUNCTIONS(double);
+#endif

@@ -60,4 +60,10 @@ struct task_cvt_task {
 };
 tl::expected<void, std::string> run_task_cvt(const task_cvt_task& tct) noexcept;
 
+struct list_task {
+  enum listable : int { opencl_devices };
+  std::vector<std::string> items;
+};
+tl::expected<void, std::string> run_list(const list_task& lt) noexcept;
+
 #endif  // NEWTON_FRACTAL_ZOOM_TASKS_H

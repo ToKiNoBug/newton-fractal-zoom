@@ -1,10 +1,15 @@
 //
 // Created by David on 2023/7/23.
 //
+#ifdef NF_HAS_OPENCL_HPP
+#include <CL/opencl.hpp>
+#else
 #include <CL/cl.hpp>
+#endif
 #include <fmt/format.h>
 #include <tl/expected.hpp>
 #include "newton_equation_base.h"
+#include "newton_equation.hpp"
 #include "OpenCL_support.h"
 
 extern "C" {
@@ -33,10 +38,18 @@ struct basic_objects {
   cl::Program program;
   cl::Kernel kernel;
 
+  bool is_double_disabled{false};
+
+  struct options {
+    bool disable_float{false};
+    bool disable_double{false};
+  };
+
   tl::expected<void, std::string> initialize(size_t platform_index,
                                              size_t device_index,
                                              std::string_view source_code,
-                                             const char* fun_name) & noexcept;
+                                             const char* fun_name,
+                                             const options& opt) & noexcept;
 };
 
 template <int precision>
@@ -58,10 +71,12 @@ class opencl_equation : public equation_fixed_prec<precision> {
   cl::Buffer m_buf_complex_diff;
 
  public:
-  opencl_equation(size_t platform_index, size_t device_index);
+  opencl_equation(size_t platform_index, size_t device_index,
+                  std::span<const complex_type> points);
 
   static tl::expected<std::unique_ptr<opencl_equation>, std::string> create(
-      size_t platform_index, size_t device_index) noexcept;
+      size_t platform_index, size_t device_index,
+      std::span<const complex_type> points) noexcept;
 
   void run_computation(
       const fractal_utils::wind_base& _wind, int iteration_times,
@@ -84,7 +99,7 @@ class opencl_equation : public equation_fixed_prec<precision> {
 
 tl::expected<void, std::string> basic_objects::initialize(
     size_t platform_index, size_t device_index, std::string_view source_code,
-    const char* fun_name) & noexcept {
+    const char* fun_name, const options& opt) & noexcept {
   {
     cl_platform_id plats[1024];
     cl_uint num_plats{0};
@@ -97,6 +112,8 @@ tl::expected<void, std::string> basic_objects::initialize(
                       num_plats, platform_index));
     }
     this->platform = cl::Platform{plats[platform_index]};
+    fmt::print("The opencl platform is: {}\n",
+               this->platform.getInfo<CL_PLATFORM_NAME>());
   }
 
   {
@@ -110,11 +127,13 @@ tl::expected<void, std::string> basic_objects::initialize(
                       devices.size(), device_index));
     }
     this->device = devices[device_index];
+    fmt::print("The opencl device is: {}\n",
+               this->device.getInfo<CL_DEVICE_NAME>());
   }
 
   cl_int err;
   {
-    this->context = cl::Context{this->device, nullptr, nullptr, &err};
+    this->context = cl::Context{this->device, nullptr, nullptr, nullptr, &err};
     handle_error_expected(
         cl::Context::Context(
             const Device& device, cl_context_properties* properties = 0,
@@ -124,6 +143,15 @@ tl::expected<void, std::string> basic_objects::initialize(
   }
 
   {
+#if NF_HAS_OPENCL_HPP
+    this->queue = cl::CommandQueue{this->context, this->device,
+                                   cl::QueueProperties::None, &err};
+    handle_error_expected(
+        cl::CommandQueue::CommandQueue(
+            const Context& context, const Device& device,
+            QueueProperties properties, cl_int* err = nullptr),
+        err);
+#else
     this->queue =
         cl::CommandQueue{this->context, {this->device}, nullptr, &err};
     handle_error_expected(
@@ -131,6 +159,7 @@ tl::expected<void, std::string> basic_objects::initialize(
             const Context& context, const Device& device,
             const cl_queue_properties* properties = 0, cl_int* err = 0),
         err);
+#endif
   }
 
   {
@@ -141,8 +170,31 @@ tl::expected<void, std::string> basic_objects::initialize(
         cl::Program::Program(const Context& context, const Sources& sources,
                              cl_int* err = NULL),
         err);
-    err = this->program.build();
-    handle_error_expected(cl::Program::build, err);
+
+    std::string build_args{""};
+    if (opt.disable_float) {
+      build_args += " -D NF_OPENCL_DISABLE_FP32";
+    }
+    if (opt.disable_double) {
+      build_args += " -D NF_OPENCL_DISABLE_FP64";
+    }
+
+    err = this->program.build(this->device, build_args.c_str());
+    if (err != CL_SUCCESS) {
+      cl_int err_info;
+      std::string info = this->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(
+          this->device, &err_info);
+      if (err_info != CL_SUCCESS) {
+        info = fmt::format(
+            "Failed to get build log, function "
+            "cl::Program::getBuildInfo<CL_PROGRAM_BUILD_LOG> failed with "
+            "opencl error code {}",
+            err_info);
+      }
+      return tl::make_unexpected(fmt::format(
+          "Failed to build opencl program (error code {}), build log:\noe{}",
+          err, info));
+    }
   }
 
   {
@@ -156,20 +208,28 @@ tl::expected<void, std::string> basic_objects::initialize(
 }
 
 template <int precision>
-opencl_equation<precision>::opencl_equation(size_t platform_index,
-                                            size_t device_index) {
+opencl_equation<precision>::opencl_equation(
+    size_t platform_index, size_t device_index,
+    std::span<const complex_type> points)
+    : base_t{points} {
   const char* fun_name = nullptr;
   if constexpr (precision == 1) {
     fun_name = "run_computation_float";
   } else {
     fun_name = "run_computation_double";
   }
+  basic_objects::options option;
+  if (precision == 1) {
+    option.disable_double = true;
+  } else {
+    option.disable_float = true;
+  }
 
   auto err =
       this->m_basic_objs.initialize(platform_index, device_index,
                                     {(const char*)newton_fractal_computation_cl,
                                      newton_fractal_computation_cl_length},
-                                    fun_name);
+                                    fun_name, option);
   if (!err) {
     throw std::runtime_error{fmt::format(
         "Failed to initialize opencl computation objects, detail: {}",
@@ -322,12 +382,14 @@ void opencl_equation<precision>::run_computation(
 template <int precision>
 
 tl::expected<std::unique_ptr<opencl_equation<precision>>, std::string>
-opencl_equation<precision>::create(size_t platform_index,
-                                   size_t device_index) noexcept {
+opencl_equation<precision>::create(
+    size_t platform_index, size_t device_index,
+    std::span<const complex_type> points) noexcept {
   try {
-    return std::make_unique<opencl_equation<precision>>(platform_index,
-                                                        device_index);
-  } catch (const std::exception& e) {
+    auto ret = std::make_unique<opencl_equation<precision>>(
+        platform_index, device_index, points);
+    return ret;
+  } catch (std::exception& e) {
     return tl::make_unexpected(
         fmt::format("Exception occurred, detail: {}.", e.what()));
   } catch (...) {
@@ -337,17 +399,19 @@ opencl_equation<precision>::create(size_t platform_index,
 
 template <>
 [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
-create_opencl_equation<float>(size_t platform_index,
-                              size_t device_index) noexcept {
-  auto exp = opencl_equation<1>::create(platform_index, device_index);
+create_opencl_equation<float>(
+    size_t platform_index, size_t device_index,
+    std::span<const std::complex<float>> points) noexcept {
+  auto exp = opencl_equation<1>::create(platform_index, device_index, points);
   return exp;
 }
 
 template <>
 [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
-create_opencl_equation<double>(size_t platform_index,
-                               size_t device_index) noexcept {
-  auto exp = opencl_equation<2>::create(platform_index, device_index);
+create_opencl_equation<double>(
+    size_t platform_index, size_t device_index,
+    std::span<const std::complex<double>> points) noexcept {
+  auto exp = opencl_equation<2>::create(platform_index, device_index, points);
   return exp;
 }
 

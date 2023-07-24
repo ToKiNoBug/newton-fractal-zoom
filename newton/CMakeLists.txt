@@ -45,9 +45,21 @@ find_package(fractal_utils COMPONENTS
     REQUIRED)
 find_package(OpenCL 3.0 REQUIRED)
 
+message("OpenCL_INCLUDE_DIRS = ${OpenCL_INCLUDE_DIRS}")
+message("OpenCL_INCLUDE_DIR = ${OpenCL_INCLUDE_DIR}")
+
+find_file(opencl_hpp_file opencl.hpp
+    PATHS "${OpenCL_INCLUDE_DIR}/CL"
+    )
+if (opencl_hpp_file)
+    target_compile_definitions(newton_fractal PRIVATE NF_HAS_OPENCL_HPP=true)
+else ()
+endif ()
+
 add_resource_config_time(cl_source_file_resource
     VAR newton_fractal_computation_cl
     newton_fractal_computation.cl)
+
 
 target_link_libraries(newton_fractal PUBLIC
     fmt::fmt

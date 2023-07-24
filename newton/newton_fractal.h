@@ -46,7 +46,7 @@ struct meta_data {
     fractal_utils::float_backend_lib backend{
         fractal_utils::float_backend_lib::unknown};
     int precision{0};
-    bool gpu{false};
+    gpu_backend gpu{gpu_backend::no};
   };
 
   int rows{0};
@@ -93,7 +93,7 @@ struct meta_data {
     return std::get<1>(this->compute_objs).precision;
   }
 
-  [[nodiscard]] bool gpu() const noexcept {
+  [[nodiscard]] gpu_backend gpu() const noexcept {
     if (this->compute_objs.index() == 0) {
       return this->obj_creator()->gpu();
     }

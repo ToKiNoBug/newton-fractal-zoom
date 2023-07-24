@@ -14,13 +14,20 @@ namespace newton_fractal {
 tl::expected<void, std::string> is_valid_option(
     fractal_utils::float_backend_lib backend, int precision) noexcept;
 
+enum class gpu_backend : uint8_t { no = 0, cuda = 1, opencl = 2 };
+
+struct opencl_option_t {
+  size_t platform_index{0};
+  size_t device_index{0};
+};
+
 class object_creator {
  public:
   virtual ~object_creator() = default;
 
   static tl::expected<std::unique_ptr<object_creator>, std::string> create(
       fractal_utils::float_backend_lib backend, int precision,
-      bool gpu) noexcept;
+      gpu_backend gpu) noexcept;
 
   [[nodiscard]] virtual fractal_utils::float_backend_lib backend_lib()
       const noexcept = 0;
@@ -28,7 +35,12 @@ class object_creator {
 
   [[nodiscard]] virtual bool is_fixed_precision() const noexcept = 0;
 
-  [[nodiscard]] virtual bool gpu() const noexcept = 0;
+  [[nodiscard]] virtual gpu_backend gpu() const noexcept = 0;
+
+  [[nodiscard]] virtual tl::expected<void, std::string> set_opencl_option(
+      const opencl_option_t& opt) & noexcept = 0;
+  [[nodiscard]] virtual std::optional<opencl_option_t> opencl_option()
+      const noexcept = 0;
 
   [[nodiscard]] virtual tl::expected<std::unique_ptr<fractal_utils::wind_base>,
                                      std::string>

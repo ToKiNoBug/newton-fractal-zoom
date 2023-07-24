@@ -23,7 +23,7 @@
   ],
   "backend": "standard",
   "precision": 2,
-  "gpu": true,
+  "gpu": "cuda",
   "window": {
     "center": [
       0,

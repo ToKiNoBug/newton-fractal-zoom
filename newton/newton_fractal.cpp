@@ -164,9 +164,14 @@ tl::expected<meta_data, std::string> load_metadata(
       return ret;
     }
 
-    bool gpu = false;
+    gpu_backend gpu = gpu_backend::no;
     if (nj.contains("gpu")) {
-      gpu = nj.at("gpu");
+      if (nj.is_boolean()) {
+        gpu = bool(nj.at("gpu")) ? gpu_backend::cuda : gpu_backend::no;
+      } else {
+        std::string str = nj.at("gpu");
+        gpu = magic_enum::enum_cast<gpu_backend>(str).value();
+      }
     }
 
     meta_data::compute_objects cobj;
@@ -178,6 +183,23 @@ tl::expected<meta_data, std::string> load_metadata(
       }
 
       cobj.obj_creator = std::move(objc.value());
+    }
+
+    {
+      opencl_option_t opencl_option{};
+      if (nj.contains("opencl_platform_index")) {
+        opencl_option.platform_index = nj.at("opencl_platform_index");
+      }
+      if (nj.contains("opencl_device_index")) {
+        opencl_option.device_index = nj.at("opencl_device_index");
+      }
+      if (gpu == gpu_backend::opencl) {
+        auto err = cobj.obj_creator->set_opencl_option(opencl_option);
+        if (!err) {
+          return tl::make_unexpected(fmt::format(
+              "Failed to set opencl option because {}", err.error()));
+        }
+      }
     }
 
     {
@@ -252,7 +274,7 @@ tl::expected<njson, std::string> save_metadata(const meta_data& m,
                   std::get<0>(m.compute_objs).obj_creator->backend_lib()));
   ret.emplace("precision",
               std::get<0>(m.compute_objs).obj_creator->precision());
-  ret.emplace("gpu", m.gpu());
+  ret.emplace("gpu", magic_enum::enum_name(m.gpu()));
 
   {
     auto wind =

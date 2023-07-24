@@ -26,7 +26,6 @@ find_package(fractal_utils 2.3.21 COMPONENTS
     REQUIRED)
 find_package(tl-expected REQUIRED)
 
-
 set(NF_mpc_support OFF)
 find_package(MPC QUIET)
 if (MPC_FOUND OR LINUX)

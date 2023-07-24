@@ -86,6 +86,13 @@ int main(int argc, char** argv) {
     taskcvt->add_option("-o", tct.out_file, "Generated file.")->required();
   }
 
+  auto list = capp.add_subcommand("list");
+  list_task lst;
+  {
+    list->add_option("item", lst.items, "Item to list")
+        ->required()
+        ->check(CLI::IsMember{magic_enum::enum_names<list_task::listable>()});
+  }
   CLI11_PARSE(capp, argc, argv);
 
   nf::newton_archive archive;
@@ -122,6 +129,14 @@ int main(int argc, char** argv) {
     auto result = run_task_cvt(tct);
     if (!result) {
       fmt::print("Failed to convert task file. Detail: {}\n", result.error());
+      return 1;
+    }
+  }
+
+  if (list->count() > 0) {
+    auto result = run_list(lst);
+    if (!result) {
+      fmt::print("Listing failed. Detail: {}\n", result.error());
       return 1;
     }
   }

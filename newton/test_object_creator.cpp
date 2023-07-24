@@ -10,7 +10,7 @@
 int main(int argc, char** argv) {
   for (auto lib : magic_enum::enum_values<fu::float_backend_lib>()) {
     for (auto prec : {1, 2, 4, 8, 16, 200}) {
-      auto ocp = nf::object_creator::create(lib, prec, false);
+      auto ocp = nf::object_creator::create(lib, prec, nf::gpu_backend::no);
 
       fmt::print("Testing lib = {}, precision = {}", magic_enum::enum_name(lib),
                  prec);

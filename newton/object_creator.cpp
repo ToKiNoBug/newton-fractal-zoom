@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 #include "newton_equation.hpp"
 #include "cuda_support.cuh"
+#include "OpenCL_support.h"
 
 #ifdef NEWTON_FRACTAL_MPC_SUPPORT
 #include "mpc_support.h"
@@ -16,8 +17,8 @@ namespace newton_fractal {
 
 tl::expected<void, std::string> is_valid_option(
     fractal_utils::float_backend_lib backend, int precision,
-    bool gpu) noexcept {
-  if (gpu) {
+    gpu_backend gpu) noexcept {
+  if (gpu != gpu_backend::no) {
     if (backend != fu::float_backend_lib::standard) {
       return tl::make_unexpected(
           "GPU can only compute standard floating point types.");
@@ -116,7 +117,20 @@ class object_creator_default_impl : public object_creator {
     return fu::backend_of<real_t>();
   }
 
-  [[nodiscard]] bool gpu() const noexcept override { return false; }
+  [[nodiscard]] gpu_backend gpu() const noexcept override {
+    return gpu_backend::no;
+  }
+
+  [[nodiscard]] std::optional<opencl_option_t> opencl_option()
+      const noexcept override {
+    return std::nullopt;
+  }
+
+  [[nodiscard]] tl::expected<void, std::string> set_opencl_option(
+      const opencl_option_t& opt) & noexcept override {
+    return tl::make_unexpected(
+        "Calling set_opencl_option on a non-opencl object_creator.");
+  }
 
   [[nodiscard]] tl::expected<std::unique_ptr<fractal_utils::wind_base>,
                              std::string>
@@ -391,7 +405,9 @@ class object_creator_by_prec
 template <int precision>
 class cuda_object_creator : public object_creator_by_prec<precision> {
  public:
-  [[nodiscard]] bool gpu() const noexcept final { return true; }
+  [[nodiscard]] gpu_backend gpu() const noexcept final {
+    return gpu_backend::cuda;
+  }
 
   [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
   create_equation(const njson& nj) const noexcept override {
@@ -404,6 +420,45 @@ class cuda_object_creator : public object_creator_by_prec<precision> {
     auto eq_exp =
         internal::create_complete_equation<fu::float_by_precision_t<precision>>(
             points.value());
+    return eq_exp;
+  }
+};
+
+template <int precision>
+class opencl_object_creator : public object_creator_by_prec<precision> {
+ private:
+  opencl_option_t m_opencl_option;
+
+ public:
+  opencl_object_creator() = default;
+  ~opencl_object_creator() override = default;
+
+  [[nodiscard]] gpu_backend gpu() const noexcept final {
+    return gpu_backend::opencl;
+  }
+
+  [[nodiscard]] std::optional<opencl_option_t> opencl_option()
+      const noexcept final {
+    return this->m_opencl_option;
+  }
+
+  [[nodiscard]] tl::expected<void, std::string> set_opencl_option(
+      const opencl_option_t& opt) & noexcept final {
+    this->m_opencl_option = opt;
+    return {};
+  }
+
+  [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
+  create_equation(const njson& nj) const noexcept override {
+    auto points = this->decode_points(nj);
+    if (!points.has_value()) {
+      return tl::make_unexpected(
+          fmt::format("Failed to decode points. Detail: {}", points.error()));
+    }
+
+    auto eq_exp = create_opencl_equation<fu::float_by_precision_t<precision>>(
+        this->m_opencl_option.platform_index,
+        this->m_opencl_option.device_index, points.value());
     return eq_exp;
   }
 };
@@ -554,7 +609,7 @@ class object_creator_mpc
       int cols) const noexcept final {
     const auto& wind = dynamic_cast<const fu::center_wind<real_type>&>(_wind);
     return std::max<int>(min_precision,
-                         fu::required_precision_of(wind, rows, cols) + 4);
+                         (int)fu::required_precision_of(wind, rows, cols) + 4);
   }
 
   [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
@@ -577,28 +632,48 @@ class object_creator_mpc
 
 tl::expected<std::unique_ptr<object_creator>, std::string>
 object_creator::create(fractal_utils::float_backend_lib backend, int precision,
-                       bool gpu) noexcept {
+                       gpu_backend gpu) noexcept {
   if (!is_valid_option(backend, precision, gpu)) {
     return tl::make_unexpected(
         fmt::format("Unsupported option: backend = {}, precision = {}.",
                     magic_enum::enum_name(backend), precision));
   }
 
-  if (gpu) {
-    object_creator* ret = nullptr;
-    switch (precision) {
-      case 1:
-        ret = new cuda_object_creator<1>;
-        break;
-      case 2:
-        ret = new cuda_object_creator<2>;
-        break;
-      default:
-        return tl::make_unexpected(
-            fmt::format("Unsupported option: backend = {}, precision = {}.",
-                        magic_enum::enum_name(backend), precision));
+  switch (gpu) {
+    case gpu_backend::cuda: {
+      object_creator* ret = nullptr;
+      switch (precision) {
+        case 1:
+          ret = new cuda_object_creator<1>;
+          break;
+        case 2:
+          ret = new cuda_object_creator<2>;
+          break;
+        default:
+          return tl::make_unexpected(
+              fmt::format("Unsupported option: backend = {}, precision = {}.",
+                          magic_enum::enum_name(backend), precision));
+      }
+      return std::unique_ptr<object_creator>{ret};
     }
-    return std::unique_ptr<object_creator>{ret};
+    case gpu_backend::opencl: {
+      object_creator* ret = nullptr;
+      switch (precision) {
+        case 1:
+          ret = new opencl_object_creator<1>;
+          break;
+        case 2:
+          ret = new opencl_object_creator<2>;
+          break;
+        default:
+          return tl::make_unexpected(
+              fmt::format("Unsupported option: backend = {}, precision = {}.",
+                          magic_enum::enum_name(backend), precision));
+      }
+      return std::unique_ptr<object_creator>{ret};
+    }
+    default:
+      break;
   }
 
   switch (backend) {
