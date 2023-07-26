@@ -400,7 +400,7 @@ auto newton_equation_mpc::compute_single(std::any& z_any,
 */
 void newton_equation_mpc::compute(const fractal_utils::wind_base& _wind,
                                   int iteration_times,
-                                  compute_option& opt) const noexcept {
+                                  compute_option& opt) & noexcept {
   assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
   assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
   const size_t rows = opt.bool_has_result.rows();

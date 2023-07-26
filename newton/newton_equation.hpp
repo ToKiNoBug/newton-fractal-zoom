@@ -429,7 +429,7 @@ class newton_equation : public newton_equation_base {
   */
 
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
-               compute_option& opt) const noexcept override {
+               compute_option& opt) & noexcept override {
     assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
     assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
     const size_t rows = opt.bool_has_result.rows();

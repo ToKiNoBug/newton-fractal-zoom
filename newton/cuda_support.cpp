@@ -45,9 +45,8 @@ class cuda_equation : public newton_equation<std::complex<float_t>, float_t> {
     return 2;
   }
 
-  void compute(
-      const fractal_utils::wind_base& _wind, int iteration_times,
-      newton_equation_base::compute_option& opt) const noexcept override {
+  void compute(const fractal_utils::wind_base& _wind, int iteration_times,
+               newton_equation_base::compute_option& opt) & noexcept override {
     this->m_computer->compute_cuda(*this, _wind, iteration_times, opt);
   }
 };

@@ -101,7 +101,7 @@ class newton_equation_mpc
   */
 
   void compute(const fractal_utils::wind_base& _wind, int iteration_times,
-               compute_option& opt) const noexcept override;
+               compute_option& opt) & noexcept override;
 
   void reset(std::span<const std::complex<double>> points) & noexcept override;
 };

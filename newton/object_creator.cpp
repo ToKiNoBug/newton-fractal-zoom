@@ -457,8 +457,7 @@ class opencl_object_creator : public object_creator_by_prec<precision> {
     }
 
     auto eq_exp = create_opencl_equation<fu::float_by_precision_t<precision>>(
-        this->m_opencl_option.platform_index,
-        this->m_opencl_option.device_index, points.value());
+        this->m_opencl_option, points.value());
     return eq_exp;
   }
 };

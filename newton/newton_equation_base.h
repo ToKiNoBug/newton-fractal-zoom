@@ -26,6 +26,12 @@ enum class float_save_format : uint8_t {
   formatted_string
 };
 
+struct compute_option {
+  fractal_utils::map_view bool_has_result;
+  fractal_utils::map_view u8_nearest_point_idx;
+  fractal_utils::map_view f64complex_difference;
+};
+
 class newton_equation_base {
  public:
   virtual ~newton_equation_base() = default;
@@ -51,20 +57,15 @@ class newton_equation_base {
     std::complex<double> difference;
   };
 
+  using compute_option = newton_fractal::compute_option;
+
   /*
   [[nodiscard]] virtual std::optional<single_result> compute_single(
       std::any &z, int iteration_times) const noexcept = 0;
   */
 
-  struct compute_option {
-    fractal_utils::map_view bool_has_result;
-    fractal_utils::map_view u8_nearest_point_idx;
-    fractal_utils::map_view f64complex_difference;
-  };
-
   virtual void compute(const fractal_utils::wind_base &wind,
-                       int iteration_times,
-                       compute_option &opt) const noexcept = 0;
+                       int iteration_times, compute_option &opt) & noexcept = 0;
 
   virtual void clear() & noexcept = 0;
 

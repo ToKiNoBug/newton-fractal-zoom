@@ -10,12 +10,27 @@
 #include <tl/expected.hpp>
 #include "newton_equation_base.h"
 #include "newton_equation.hpp"
+#include "object_creator.h"
 #include "OpenCL_support.h"
 
 extern "C" {
 extern const unsigned char newton_fractal_computation_cl[];
 extern const unsigned int newton_fractal_computation_cl_length;
 }
+
+#define handle_error_expected(fun_name, error_code)                            \
+  if (error_code != CL_SUCCESS) {                                              \
+    return tl::make_unexpected(                                                \
+        fmt::format("Function {} failed with opencl error code {}", #fun_name, \
+                    error_code));                                              \
+  }
+
+#define handle_error_throw(fun_name, error_code)                               \
+  if (error_code != CL_SUCCESS) {                                              \
+    throw std::runtime_error{                                                  \
+        fmt::format("Function {} failed with opencl error code {}", #fun_name, \
+                    error_code)};                                              \
+  }
 
 namespace newton_fractal {
 
@@ -38,7 +53,7 @@ struct basic_objects {
   cl::Program program;
   cl::Kernel kernel;
 
-  bool is_double_disabled{false};
+  bool is_double_supported{true};
 
   struct options {
     bool disable_float{false};
@@ -52,6 +67,9 @@ struct basic_objects {
                                              const options& opt) & noexcept;
 };
 
+constexpr cl_mem_flags input_flags = CL_MEM_READ_ONLY;
+constexpr cl_mem_flags output_flags = CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY;
+
 template <int precision>
 class opencl_equation : public equation_fixed_prec<precision> {
  public:
@@ -63,6 +81,8 @@ class opencl_equation : public equation_fixed_prec<precision> {
  private:
   basic_objects m_basic_objs;
 
+  opencl_option_t m_opencl_option;
+
   cl::Buffer m_buf_points;
   cl::Buffer m_buf_parameters;
 
@@ -71,31 +91,30 @@ class opencl_equation : public equation_fixed_prec<precision> {
   cl::Buffer m_buf_complex_diff;
 
  public:
-  opencl_equation(size_t platform_index, size_t device_index,
+  opencl_equation(const opencl_option_t& option,
                   std::span<const complex_type> points);
 
+  opencl_equation(const opencl_equation&) = delete;
+
   static tl::expected<std::unique_ptr<opencl_equation>, std::string> create(
-      size_t platform_index, size_t device_index,
+      const opencl_option_t& create_option,
       std::span<const complex_type> points) noexcept;
 
-  void run_computation(
-      const fractal_utils::wind_base& _wind, int iteration_times,
-      typename newton_equation_base::compute_option& opt) & noexcept(false);
+  void run_computation_throwable(const fractal_utils::wind_base& _wind,
+                                 int iteration_times,
+                                 compute_option& opt) & noexcept(false);
+
+  void compute(const fractal_utils::wind_base& _wind, int iteration_times,
+               compute_option& opt) & noexcept final {
+    this->run_computation_throwable(_wind, iteration_times, opt);
+  }
+
+  [[nodiscard]] std::unique_ptr<newton_equation_base> copy()
+      const noexcept final {
+    return std::make_unique<opencl_equation>(this->m_opencl_option,
+                                             this->_points);
+  }
 };
-
-#define handle_error_expected(fun_name, error_code)                            \
-  if (error_code != CL_SUCCESS) {                                              \
-    return tl::make_unexpected(                                                \
-        fmt::format("Function {} failed with opencl error code {}", #fun_name, \
-                    error_code));                                              \
-  }
-
-#define handle_error_throw(fun_name, error_code)                               \
-  if (error_code != CL_SUCCESS) {                                              \
-    throw std::runtime_error{                                                  \
-        fmt::format("Function {} failed with opencl error code {}", #fun_name, \
-                    error_code)};                                              \
-  }
 
 tl::expected<void, std::string> basic_objects::initialize(
     size_t platform_index, size_t device_index, std::string_view source_code,
@@ -112,8 +131,8 @@ tl::expected<void, std::string> basic_objects::initialize(
                       num_plats, platform_index));
     }
     this->platform = cl::Platform{plats[platform_index]};
-    fmt::print("The opencl platform is: {}\n",
-               this->platform.getInfo<CL_PLATFORM_NAME>());
+    //    fmt::print("The opencl platform is: {}\n",
+    //               this->platform.getInfo<CL_PLATFORM_NAME>());
   }
 
   {
@@ -127,8 +146,15 @@ tl::expected<void, std::string> basic_objects::initialize(
                       devices.size(), device_index));
     }
     this->device = devices[device_index];
-    fmt::print("The opencl device is: {}\n",
-               this->device.getInfo<CL_DEVICE_NAME>());
+    auto device_extensions = this->device.getInfo<CL_DEVICE_EXTENSIONS>(&err);
+    handle_error_expected(cl::Device::getInfo<CL_DEVICE_EXTENSIONS>, err);
+
+    this->is_double_supported =
+        (device_extensions.find("cl_khr_fp64") != std::string::npos);
+
+    //    fmt::print("The opencl device is: {}, support fp64 = {}\n",
+    //               this->device.getInfo<CL_DEVICE_NAME>(),
+    //               this->is_double_supported);
   }
 
   cl_int err;
@@ -140,6 +166,10 @@ tl::expected<void, std::string> basic_objects::initialize(
             void (*)(const char*, const void*, ::size_t, void*) notifyFptr = 0,
             void* data = 0, cl_int* err = 0),
         err);
+
+    auto _devices = this->context.getInfo<CL_CONTEXT_DEVICES>();
+    assert(_devices.size() == 1);
+    assert(_devices[0]() == this->device());
   }
 
   {
@@ -160,6 +190,9 @@ tl::expected<void, std::string> basic_objects::initialize(
             const cl_queue_properties* properties = 0, cl_int* err = 0),
         err);
 #endif
+
+    auto _device = this->queue.getInfo<CL_QUEUE_DEVICE>();
+    assert(_device() == this->device());
   }
 
   {
@@ -171,7 +204,7 @@ tl::expected<void, std::string> basic_objects::initialize(
                              cl_int* err = NULL),
         err);
 
-    std::string build_args{""};
+    std::string build_args;
     if (opt.disable_float) {
       build_args += " -D NF_OPENCL_DISABLE_FP32";
     }
@@ -201,7 +234,7 @@ tl::expected<void, std::string> basic_objects::initialize(
     this->kernel = cl::Kernel{this->program, fun_name, &err};
     handle_error_expected(cl::Kernel::Kernel(const Program& program,
                                              const char* name, cl_int* err = 0),
-                          err);
+                          err)
   }
 
   return {};
@@ -209,9 +242,8 @@ tl::expected<void, std::string> basic_objects::initialize(
 
 template <int precision>
 opencl_equation<precision>::opencl_equation(
-    size_t platform_index, size_t device_index,
-    std::span<const complex_type> points)
-    : base_t{points} {
+    const opencl_option_t& create_option, std::span<const complex_type> points)
+    : base_t{points}, m_opencl_option{create_option} {
   const char* fun_name = nullptr;
   if constexpr (precision == 1) {
     fun_name = "run_computation_float";
@@ -225,35 +257,33 @@ opencl_equation<precision>::opencl_equation(
     option.disable_float = true;
   }
 
-  auto err =
-      this->m_basic_objs.initialize(platform_index, device_index,
-                                    {(const char*)newton_fractal_computation_cl,
-                                     newton_fractal_computation_cl_length},
-                                    fun_name, option);
+  auto err = this->m_basic_objs.initialize(
+      create_option.platform_index, create_option.device_index,
+      {(const char*)newton_fractal_computation_cl,
+       newton_fractal_computation_cl_length},
+      fun_name, option);
   if (!err) {
     throw std::runtime_error{fmt::format(
         "Failed to initialize opencl computation objects, detail: {}",
         err.error())};
   }
-
-  constexpr size_t points_capacity = 30;
-  initialize_buffer(this->m_basic_objs.context, this->m_buf_points,
-                    points_capacity * sizeof(complex_type),
-                    CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY);
-  initialize_buffer(this->m_basic_objs.context, this->m_buf_parameters,
-                    points_capacity * sizeof(complex_type),
-                    CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY);
-
-  constexpr size_t pixel_capacity = 1;
-  initialize_buffer(this->m_basic_objs.context, this->m_buf_has_value,
-                    pixel_capacity * sizeof(bool),
-                    CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY);
-  initialize_buffer(this->m_basic_objs.context, this->m_buf_parameters,
-                    pixel_capacity * sizeof(uint8_t),
-                    CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY);
-  initialize_buffer(this->m_basic_objs.context, this->m_buf_complex_diff,
-                    pixel_capacity * sizeof(std::complex<double>),
-                    CL_MEM_WRITE_ONLY | CL_MEM_HOST_READ_ONLY);
+  {
+    constexpr size_t points_capacity = 30;
+    initialize_buffer(this->m_basic_objs.context, this->m_buf_points,
+                      points_capacity * sizeof(complex_type), input_flags);
+    initialize_buffer(this->m_basic_objs.context, this->m_buf_parameters,
+                      points_capacity * sizeof(complex_type), input_flags);
+  }
+  {
+    constexpr size_t pixel_capacity = 32;
+    initialize_buffer(this->m_basic_objs.context, this->m_buf_has_value,
+                      pixel_capacity * sizeof(bool), output_flags);
+    initialize_buffer(this->m_basic_objs.context, this->m_buf_nearest_index,
+                      pixel_capacity * sizeof(uint8_t), output_flags);
+    initialize_buffer(this->m_basic_objs.context, this->m_buf_complex_diff,
+                      pixel_capacity * sizeof(std::complex<double>),
+                      output_flags);
+  }
 }
 
 void initialize_buffer(const cl::Context& context, cl::Buffer& buf,
@@ -266,7 +296,9 @@ void initialize_buffer(const cl::Context& context, cl::Buffer& buf,
       error_code);
 }
 
-void resize_buffer(cl::Buffer& buf, size_t bytes) noexcept(false) {
+void resize_buffer(cl::Buffer& buf, size_t bytes,
+                   bool is_input) noexcept(false) {
+  assert(buf() != nullptr);
   cl_int error_code;
   const auto actual_bytes = buf.getInfo<CL_MEM_SIZE>(&error_code);
   handle_error_throw(cl::Buffer::getInfo<CL_MEM_SIZE>, error_code);
@@ -275,27 +307,28 @@ void resize_buffer(cl::Buffer& buf, size_t bytes) noexcept(false) {
     return;
   }
 
-  const auto flags = buf.getInfo<CL_MEM_FLAGS>(&error_code);
-  handle_error_throw(cl::Buffer::getInfo<CL_MEM_FLAGS>, error_code);
+  //  const auto flags = buf.getInfo<CL_MEM_FLAGS>(&error_code);
+  //  handle_error_throw(cl::Buffer::getInfo<CL_MEM_FLAGS>, error_code);
 
   const auto context = buf.getInfo<CL_MEM_CONTEXT>(&error_code);
   handle_error_throw(cl::Buffer::getInfo<CL_MEM_CONTEXT>, error_code);
 
-  initialize_buffer(context, buf, bytes, flags);
+  initialize_buffer(context, buf, bytes, is_input ? input_flags : output_flags);
 }
 
 void resize_dest_buffer(size_t num_pixels, cl::Buffer& buf_has_value,
                         cl::Buffer& buf_nearest_index,
                         cl::Buffer& buf_complex_diff) noexcept {
-  resize_buffer(buf_has_value, num_pixels * sizeof(bool));
-  resize_buffer(buf_nearest_index, num_pixels * sizeof(uint8_t));
-  resize_buffer(buf_complex_diff, num_pixels * sizeof(std::complex<double>));
+  resize_buffer(buf_has_value, num_pixels * sizeof(bool), false);
+  resize_buffer(buf_nearest_index, num_pixels * sizeof(uint8_t), false);
+  resize_buffer(buf_complex_diff, num_pixels * sizeof(std::complex<double>),
+                false);
 }
 
 template <int precision>
-void opencl_equation<precision>::run_computation(
+void opencl_equation<precision>::run_computation_throwable(
     const fractal_utils::wind_base& _wind, int iteration_times,
-    typename newton_equation_base::compute_option& opt) & noexcept(false) {
+    compute_option& opt) & noexcept(false) {
   assert(opt.bool_has_result.rows() == opt.f64complex_difference.rows());
   assert(opt.f64complex_difference.rows() == opt.u8_nearest_point_idx.rows());
   const size_t rows = opt.bool_has_result.rows();
@@ -315,8 +348,8 @@ void opencl_equation<precision>::run_computation(
 
   auto fun_set_points_parameters = [this](std::span<complex_type> host,
                                           cl::Buffer& device_buf) {
-    resize_buffer(device_buf, host.size_bytes());
-
+    resize_buffer(device_buf, host.size_bytes(), true);
+    assert(this->m_basic_objs.queue() != nullptr);
     auto err = this->m_basic_objs.queue.enqueueWriteBuffer(
         device_buf, true, 0, host.size_bytes(), host.data());
     handle_error_throw(cl::CommandQueue::enqueueWriteBuffer, err);
@@ -333,26 +366,40 @@ void opencl_equation<precision>::run_computation(
     cl_uint arg_index = 0;
     err = this->m_basic_objs.kernel.setArg(arg_index++, this->m_buf_points);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++, this->m_buf_parameters);
     handle_error_throw(cl::Kernel::setArg, err);
+
+    err = this->m_basic_objs.kernel.template setArg<int>(arg_index++,
+                                                         this->order());
+    handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.template setArg<int>(arg_index++, rows);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.template setArg<int>(arg_index++, cols);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++, r0c0);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++, r_unit);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++, c_unit);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++, this->m_buf_has_value);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.setArg(arg_index++,
                                            this->m_buf_nearest_index);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err =
         this->m_basic_objs.kernel.setArg(arg_index++, this->m_buf_complex_diff);
     handle_error_throw(cl::Kernel::setArg, err);
+
     err = this->m_basic_objs.kernel.template setArg<int>(arg_index++,
                                                          iteration_times);
     handle_error_throw(cl::Kernel::setArg, err);
@@ -365,10 +412,10 @@ void opencl_equation<precision>::run_computation(
       cl::NDRange{required_blocks * block_size}, cl::NDRange{block_size});
   handle_error_throw(cl::CommandQueue::enqueueNDRangeKernel, err);
 
-  auto fun_read_matrix = [this](const cl::Buffer& src, fu::map_view dst) {
-    const auto err = this->m_basic_objs.queue.enqueueReadBuffer(
+  auto fun_read_matrix = [this](fu::map_view& dst, const cl::Buffer& src) {
+    const auto err_code = this->m_basic_objs.queue.enqueueReadBuffer(
         src, false, 0, dst.bytes(), dst.data());
-    handle_error_throw(cl::CommandQueue::enqueueReadBuffer, err);
+    handle_error_throw(cl::CommandQueue::enqueueReadBuffer, err_code);
   };
 
   fun_read_matrix(opt.bool_has_result, this->m_buf_has_value);
@@ -377,17 +424,26 @@ void opencl_equation<precision>::run_computation(
 
   err = this->m_basic_objs.queue.finish();
   handle_error_throw(cl::CommandQueue::finish(), err);
+
+  if (!this->m_basic_objs.is_double_supported &&
+      std::is_same_v<real_type, float>) {
+    auto* const src = reinterpret_cast<const std::complex<float>*>(
+        opt.f64complex_difference.data());
+    for (auto idx = (int64_t)opt.f64complex_difference.size() - 1; idx >= 0;
+         idx--) {
+      opt.f64complex_difference.at<std::complex<double>>(idx) = src[idx];
+    }
+  }
 }
 
 template <int precision>
-
 tl::expected<std::unique_ptr<opencl_equation<precision>>, std::string>
 opencl_equation<precision>::create(
-    size_t platform_index, size_t device_index,
+    const opencl_option_t& create_option,
     std::span<const complex_type> points) noexcept {
   try {
-    auto ret = std::make_unique<opencl_equation<precision>>(
-        platform_index, device_index, points);
+    auto ret =
+        std::make_unique<opencl_equation<precision>>(create_option, points);
     return ret;
   } catch (std::exception& e) {
     return tl::make_unexpected(
@@ -400,18 +456,18 @@ opencl_equation<precision>::create(
 template <>
 [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
 create_opencl_equation<float>(
-    size_t platform_index, size_t device_index,
+    const opencl_option_t& create_option,
     std::span<const std::complex<float>> points) noexcept {
-  auto exp = opencl_equation<1>::create(platform_index, device_index, points);
+  auto exp = opencl_equation<1>::create(create_option, points);
   return exp;
 }
 
 template <>
 [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
 create_opencl_equation<double>(
-    size_t platform_index, size_t device_index,
+    const opencl_option_t& create_option,
     std::span<const std::complex<double>> points) noexcept {
-  auto exp = opencl_equation<2>::create(platform_index, device_index, points);
+  auto exp = opencl_equation<2>::create(create_option, points);
   return exp;
 }
 

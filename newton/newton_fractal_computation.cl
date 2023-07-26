@@ -138,11 +138,11 @@ typedef struct {
       __global const complex_t* points, __global const complex_t* parameters,  \
       int order, int rows, int cols, complex_t r0c0, real_t r_unit,            \
       real_t c_unit, __global bool* dst_has_value,                             \
-      __global uint8* dst_nearest_index,                                       \
+      __global uchar* dst_nearest_index,                                       \
       __global complex_difference_result_t* dst_complex_diff,                  \
       int iteration_times) {                                                   \
     const uint global_offset = get_global_id(0);                               \
-                                                                               \
+    const uint global_size = get_global_size(0);                               \
     if (global_offset >= rows * cols) {                                        \
       return;                                                                  \
     }                                                                          \
@@ -153,9 +153,10 @@ typedef struct {
     complex_t z = r0c0;                                                        \
     {                                                                          \
       real_vec2_t* _z = (real_vec2_t*)&z;                                      \
-      _z[1] += r * r_unit;                                                     \
-      _z[0] += c * c_unit;                                                     \
+      (*_z)[1] += r * r_unit;                                                  \
+      (*_z)[0] += c * c_unit;                                                  \
     }                                                                          \
+                                                                               \
     single_result result;                                                      \
     const bool ok = compute_single##suffix(parameters, points, order, &z,      \
                                            iteration_times, &result);          \

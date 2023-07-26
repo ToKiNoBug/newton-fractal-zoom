@@ -113,9 +113,9 @@ inline fractal_utils::pixel_RGB render_cpu(
     std::span<const render_config::render_method> methods,
     fractal_utils::pixel_RGB color_for_nan, bool has_value, int nearest_idx,
     float mag_normalized, float arg_normalized) noexcept {
-  assert(methods.size() > nearest_idx);
-  assert(nearest_idx >= 0);
   if (has_value) {
+    assert(methods.size() > nearest_idx);
+    assert(nearest_idx >= 0);
     assert(mag_normalized >= 0 && mag_normalized <= 1);
     assert(arg_normalized >= 0 && arg_normalized <= 1);
   }
