@@ -166,10 +166,11 @@ tl::expected<meta_data, std::string> load_metadata(
 
     gpu_backend gpu = gpu_backend::no;
     if (nj.contains("gpu")) {
-      if (nj.is_boolean()) {
-        gpu = bool(nj.at("gpu")) ? gpu_backend::cuda : gpu_backend::no;
+      auto& nj_gpu = nj.at("gpu");
+      if (nj_gpu.is_boolean()) {
+        gpu = bool(nj_gpu) ? gpu_backend::cuda : gpu_backend::no;
       } else {
-        std::string str = nj.at("gpu");
+        std::string str = nj_gpu;
         gpu = magic_enum::enum_cast<gpu_backend>(str).value();
       }
     }
