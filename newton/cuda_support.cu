@@ -26,18 +26,35 @@ void copy(const void *src_device, size_t bytes, void *dst_host) {
 }
 
 template <typename float_t>
-__global__ void run_computation(const thrust::complex<float_t> *points,
-                                const thrust::complex<float_t> *parameters,
-                                int order, int rows, int cols,
-                                thrust::complex<float_t> r0c0, float_t r_unit,
-                                float_t c_unit, bool *dst_has_value,
-                                uint8_t *dst_nearest_index,
-                                thrust::complex<double> *dst_complex_diff,
-                                int iteration_times) {
+__global__ void run_computation(
+    const thrust::complex<float_t> *points_global,
+    const thrust::complex<float_t> *parameters_global, int order, int rows,
+    int cols, thrust::complex<float_t> r0c0, float_t r_unit, float_t c_unit,
+    bool *dst_has_value, uint8_t *dst_nearest_index,
+    thrust::complex<double> *dst_complex_diff, int iteration_times) {
   const auto global_offset = blockDim.x * blockIdx.x + threadIdx.x;
   if (global_offset >= rows * cols) {
     return;
   }
+
+  ///__shared__ extern const thrust::complex<float_t> *points;
+  //__shared__ extern const thrust::complex<float_t> *parameters;
+  __shared__ extern uint8_t shared_mem[];
+
+  thrust::complex<float_t> *const points =
+      reinterpret_cast<thrust::complex<float_t> *>(shared_mem);
+  thrust::complex<float_t> *const parameters = points + order;
+
+  if (threadIdx.x == 0) {
+    for (int idx = 0; idx < order; idx++) {
+      points[idx] = points_global[idx];
+    }
+    for (int idx = 0; idx < order; idx++) {
+      parameters[idx] = parameters_global[idx];
+    }
+  }
+
+  __syncthreads();
 
   const auto r = global_offset / cols;
   const auto c = global_offset % cols;
@@ -112,16 +129,19 @@ class cuda_equation_impl : public cuda_computer<float_t> {
     this->m_nearest_index_device.resize(num_pixels);
     this->m_complex_diff_device.resize(num_pixels);
 
-    constexpr size_t warp_size = 32;
+    constexpr size_t warp_size = 64;
     const size_t required_blocks = std::ceil(double(num_pixels) / warp_size);
+    const size_t required_shared_mem =
+        eq.order() * sizeof(thrust::complex<float_t>) * 2;
 
-    internal::run_computation<<<required_blocks, warp_size, 0>>>(
-        this->m_points_device.data().get(),
-        this->m_parameters_device.data().get(), eq.order(),
-        opt.bool_has_result.rows(), opt.bool_has_result.cols(), r0c0, r_unit,
-        c_unit, this->m_has_value_device.data().get(),
-        this->m_nearest_index_device.data().get(),
-        this->m_complex_diff_device.data().get(), iteration_times);
+    internal::
+        run_computation<<<required_blocks, warp_size, required_shared_mem>>>(
+            this->m_points_device.data().get(),
+            this->m_parameters_device.data().get(), eq.order(),
+            opt.bool_has_result.rows(), opt.bool_has_result.cols(), r0c0,
+            r_unit, c_unit, this->m_has_value_device.data().get(),
+            this->m_nearest_index_device.data().get(),
+            this->m_complex_diff_device.data().get(), iteration_times);
 
     cudaDeviceSynchronize();
 
