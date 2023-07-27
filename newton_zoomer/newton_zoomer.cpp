@@ -74,8 +74,28 @@ void newton_zoomer::compute(const fu::wind_base &wind,
         .bool_has_result{ar.map_has_result()},
         .u8_nearest_point_idx{ar.map_nearest_point_idx()},
         .f64complex_difference{ar.map_complex_difference()}};
-    ar.info().equation()->compute(*ar.info().window(), ar.info().iteration,
-                                  opt);
+    QString err_title{"Failed to compute, nfzoom must crash"}, err_message;
+    bool has_exception{false};
+    try {
+      ar.info().equation()->compute(*ar.info().window(), ar.info().iteration,
+                                    opt);
+    } catch (const std::exception &e) {
+      has_exception = true;
+      err_message = QStringLiteral(
+                        "Exception caught during computation, may be a "
+                        "gpu-related error. Detail:\n%1")
+                        .arg(e.what());
+    } catch (...) {
+      has_exception = true;
+      err_message = QStringLiteral(
+          "Unknown exception caught, we can not retrieve any error message.");
+    }
+    if (has_exception) {
+      QMessageBox::critical(
+          nullptr, err_title, err_message,
+          QMessageBox::StandardButtons{QMessageBox::StandardButton::Close});
+      exit(114514);
+    }
   }
 }
 
