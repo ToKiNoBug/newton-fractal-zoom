@@ -119,6 +119,7 @@ class newton_label final : public scalable_label {
 
   void dropEvent(QDropEvent* event) override;
   void dragMoveEvent(QDragMoveEvent* e) override;
+  std::optional<double> fps(double max_counted_time_span);
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H

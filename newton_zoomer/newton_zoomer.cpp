@@ -4,6 +4,8 @@
 
 #include "newton_zoomer.h"
 #include <fstream>
+#include <omp.h>
+#include <ranges>
 
 newton_zoomer::newton_zoomer(QWidget *parent)
     : fractal_utils::zoom_window{parent} {
@@ -15,6 +17,8 @@ newton_zoomer::newton_zoomer(QWidget *parent)
   this->label_widget()->setScaledContents(true);
 
   this->set_frame_file_extensions("*.nfar;*.nfar.zst;;*.json");
+
+  this->setWindowTitle(this->m_title);
 }
 
 [[nodiscard]] std::unique_ptr<fu::wind_base> newton_zoomer::create_wind()
@@ -97,6 +101,8 @@ void newton_zoomer::compute(const fu::wind_base &wind,
       exit(114514);
     }
   }
+
+  this->m_computation_log.emplace_back(omp_get_wtime());
 }
 
 void newton_zoomer::render(std::any &archive, const fu::wind_base &wind,
@@ -241,6 +247,18 @@ void newton_zoomer::refresh_range_display() & noexcept {
   lb->repaint_points(*this->current_result().wind);
 }
 
+void newton_zoomer::refresh_image_display() & noexcept {
+  zoom_window::refresh_image_display();
+
+  auto fps = this->fps(5);
+  if (fps.has_value()) {
+    this->setWindowTitle(
+        QStringLiteral("%1 fps: %2").arg(this->m_title).arg(fps.value()));
+  } else {
+    this->setWindowTitle(this->m_title);
+  }
+}
+
 void newton_zoomer::on_btn_revert_clicked() {
   zoom_window::on_btn_revert_clicked();
   fmt::print("size of stack: {}\n", this->m_window_stack.size());
@@ -258,4 +276,37 @@ void newton_zoomer::update_equation(
   this->compute_current();
   this->render_current();
   this->refresh_image_display();
+}
+
+std::optional<double> newton_zoomer::fps(size_t statistic_num) const noexcept {
+  //  if (max_counted_time_span < 0) {
+  //    return std::nullopt;
+  //  }
+  const auto current = omp_get_wtime();
+  // const auto counting_min = current - max_counted_time_span;
+  if (this->m_computation_log.empty()) {
+    return std::nullopt;
+  }
+
+  const double latest_time = this->m_computation_log.back();
+  size_t num_frames{0};
+  double oldest_time{-1};
+  for (auto time : this->m_computation_log | std::views::reverse) {
+    if (num_frames > statistic_num) {
+      break;
+    }
+
+    oldest_time = time;
+    num_frames++;
+  }
+
+  if (num_frames <= 1) {
+    return std::nullopt;
+  }
+
+  if (latest_time == oldest_time) {
+    return std::nullopt;
+  }
+
+  return double(num_frames - 1) / (latest_time - oldest_time);
 }

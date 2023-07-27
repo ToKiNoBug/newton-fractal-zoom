@@ -8,10 +8,14 @@
 #include "newton_label.h"
 #include <newton_archive.h>
 #include <newton_render.h>
+#include <list>
 
 class newton_zoomer final : public fractal_utils::zoom_window {
  private:
   newton_fractal::meta_data m_template_metadata;
+  mutable std::list<double> m_computation_log;
+
+  QString m_title{"Newton fractal zoomer"};
 
  public:
   explicit newton_zoomer(QWidget *parent = nullptr);
@@ -29,6 +33,12 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   void set_template_metadata(newton_fractal::meta_data &&src) & noexcept;
 
   void refresh_range_display() & noexcept final;
+
+  void refresh_image_display() & noexcept final;
+
+  [[nodiscard]] std::optional<double> fps(size_t statistic_num) const noexcept;
+
+  void clear_computation_log() & noexcept { this->m_computation_log.clear(); }
 
  protected:
   [[nodiscard]] std::unique_ptr<fu::wind_base> create_wind()

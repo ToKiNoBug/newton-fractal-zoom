@@ -86,7 +86,8 @@ void launcher_wind::on_pb_start_clicked() noexcept {
         this, "Incorrect computation config",
         QStringLiteral("%1 seems to require mpfr, which is only available on "
                        "Linux. nfzoom may not be launched successfully, are "
-                       "you sure to continue?"),
+                       "you sure to continue?")
+            .arg(compute_src),
         QMessageBox::StandardButtons{QMessageBox::StandardButton::Yes,
                                      QMessageBox::StandardButton::No});
     if (choice != QMessageBox::StandardButton::Yes) {

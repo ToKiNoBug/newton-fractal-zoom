@@ -23,6 +23,7 @@ target_link_libraries(nfzoom_launcher PRIVATE
     Qt6::Widgets)
 set_target_properties(nfzoom_launcher PROPERTIES
     WIN32_EXECUTABLE ON)
+add_dependencies(nfzoom_launcher nfzoom)
 
 file(GLOB compute_presets "${CMAKE_SOURCE_DIR}/compute_tasks/*.json")
 file(COPY ${compute_presets} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/../compute_presets")
@@ -38,7 +39,7 @@ if (${WIN32})
         BUILD_MODE
         INSTALL_MODE INSTALL_DESTINATION bin
         FLAGS -no-translations
-        )
+    )
     DLLD_add_deploy(nfzoom
         BUILD_MODE
         INSTALL_MODE INSTALL_DESTINATION bin)
@@ -48,7 +49,7 @@ if (${WIN32})
         BUILD_MODE
         INSTALL_MODE INSTALL_DESTINATION bin
         FLAGS -no-translations
-        )
+    )
     DLLD_add_deploy(nfzoom_launcher
         BUILD_MODE
         INSTALL_MODE INSTALL_DESTINATION bin)
