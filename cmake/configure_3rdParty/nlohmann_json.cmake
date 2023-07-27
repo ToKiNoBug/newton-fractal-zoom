@@ -7,4 +7,5 @@ if (EXISTS ${NF_njson_file})
 endif ()
 
 message(STATUS "Downloading nlohmann json...")
-file(DOWNLOAD https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp ${NF_njson_file})
+#file(DOWNLOAD )
+NF_Download(https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp ${NF_njson_file})
