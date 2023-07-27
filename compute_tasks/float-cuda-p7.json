@@ -23,7 +23,7 @@
   ],
   "backend": "standard",
   "precision": 1,
-  "gpu": true,
+  "gpu": "cuda",
   "window": {
     "center": [
       0,
@@ -64,5 +64,5 @@
   ],
   "rows": 720,
   "cols": 1080,
-  "iteration": 100
+  "iteration": 50
 }
