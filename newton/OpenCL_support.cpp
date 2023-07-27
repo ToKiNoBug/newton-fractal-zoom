@@ -212,7 +212,11 @@ tl::expected<void, std::string> basic_objects::initialize(
       build_args += " -D NF_OPENCL_DISABLE_FP64";
     }
 
+#ifdef NF_HAS_OPENCL_HPP
     err = this->program.build(this->device, build_args.c_str());
+#else
+    err = this->program.build({this->device}, build_args.c_str());
+#endif
     if (err != CL_SUCCESS) {
       cl_int err_info;
       std::string info = this->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(
