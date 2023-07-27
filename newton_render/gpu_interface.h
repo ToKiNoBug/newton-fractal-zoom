@@ -132,10 +132,13 @@ inline fractal_utils::pixel_RGB render_cpu(const render_config &cfg,
 }
 
 struct normalize_option {
+  // using min_max_type = std::conditional_t<atomic, std::atomic<double>,
+  // double>;
   double min;
   double max;
 
-  NF_HOST_DEVICE_FUN inline double normalize(double src) const noexcept {
+  [[nodiscard]] NF_HOST_DEVICE_FUN inline double normalize(
+      double src) const noexcept {
     assert(src >= this->min);
     assert(src <= this->max);
     assert(this->max != this->min);

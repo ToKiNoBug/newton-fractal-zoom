@@ -6,6 +6,7 @@
 #include <fstream>
 #include <omp.h>
 #include <ranges>
+#include <thread>
 
 newton_zoomer::newton_zoomer(QWidget *parent)
     : fractal_utils::zoom_window{parent} {
@@ -105,14 +106,37 @@ void newton_zoomer::compute(const fu::wind_base &wind,
   this->m_computation_log.emplace_back(omp_get_wtime());
 }
 
+#define handle_error(exp_obj)                             \
+  if (!(exp_obj)) {                                       \
+    fmt::print("Render failed: {}\n", (exp_obj).error()); \
+    exit(2);                                              \
+  }
+
 void newton_zoomer::render(std::any &archive, const fu::wind_base &wind,
                            fu::map_view image_u8c3) const noexcept {
   auto &ar = *std::any_cast<nf::newton_archive>(&archive);
-  thread_local nf::cpu_renderer renderer;
+  //  thread_local nf::cpu_renderer renderer;
+  //  thread_local auto gpu_renderer_exp =
+  //      nf::gpu_render::create(image_u8c3.rows(), image_u8c3.cols());
+  //  thread_local auto gpu_render_config_exp =
+  //      nf::render_config_gpu_interface::create();
 
-  renderer.render(this->render_config, ar.map_has_result(),
-                  ar.map_nearest_point_idx(), ar.map_complex_difference(),
-                  image_u8c3, 0, 0);
+  if (!this->gpu_render) {
+    ::cpu_renderer.set_threads(std::thread::hardware_concurrency());
+    ::cpu_renderer.render(this->render_config, ar.map_has_result(),
+                          ar.map_nearest_point_idx(),
+                          ar.map_complex_difference(), image_u8c3, 0, 0);
+    return;
+  }
+
+  auto &gpu_config = ::gpu_render_config_exp.value();
+  auto &gpu_renderer = ::gpu_renderer_exp.value();
+  auto err = gpu_config->set_config(this->render_config);
+  handle_error(err);
+  err = gpu_renderer->render(*gpu_config, ar.map_has_result(),
+                             ar.map_nearest_point_idx(),
+                             ar.map_complex_difference(), image_u8c3, 0, 0);
+  handle_error(err);
 }
 
 std::string newton_zoomer::encode_hex(const fu::wind_base &wind_src,
@@ -307,6 +331,8 @@ std::optional<double> newton_zoomer::fps(size_t statistic_num) const noexcept {
   if (latest_time == oldest_time) {
     return std::nullopt;
   }
+
+  fmt::print("num_frames = {}\n", num_frames);
 
   return double(num_frames - 1) / (latest_time - oldest_time);
 }

@@ -156,6 +156,7 @@ tl::expected<void, std::string> cpu_renderer::render(
     arg_opt.max = std::max(arg_opt.max, std::nextafter(arg_opt.min, 1));
   }
 
+#pragma omp parallel for num_threads(this->m_threads)
   for (int r = skip_rows; r < this->rows() - skip_rows; r++) {
     for (int c = skip_cols; c < this->cols() - skip_cols; c++) {
       const auto norm_arg = this->m_map_norm_arg.at<std::complex<double>>(r, c);

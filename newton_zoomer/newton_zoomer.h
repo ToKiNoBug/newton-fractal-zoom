@@ -10,6 +10,13 @@
 #include <newton_render.h>
 #include <list>
 
+extern nf::cpu_renderer cpu_renderer;
+extern tl::expected<std::unique_ptr<nf::gpu_render>, std::string>
+    gpu_renderer_exp;
+extern tl::expected<std::unique_ptr<nf::render_config_gpu_interface>,
+                    std::string>
+    gpu_render_config_exp;
+
 class newton_zoomer final : public fractal_utils::zoom_window {
  private:
   newton_fractal::meta_data m_template_metadata;
@@ -23,6 +30,7 @@ class newton_zoomer final : public fractal_utils::zoom_window {
 
   nf::render_config render_config;
   bool auto_precision{false};
+  bool gpu_render{false};
 
   [[nodiscard]] inline auto &template_metadata() noexcept {
     return this->m_template_metadata;

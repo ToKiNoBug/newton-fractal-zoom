@@ -82,6 +82,8 @@ __global__ void run_computation(
 
 }  // namespace internal
 
+__constant__ thrust::complex<float_t> m_points_constant[256];
+
 template <typename float_t>
 class cuda_equation_impl : public cuda_computer<float_t> {
  private:

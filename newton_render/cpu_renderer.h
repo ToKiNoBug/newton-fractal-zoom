@@ -46,6 +46,8 @@ class cpu_renderer {
 
   std::optional<uint8_t> m_nearest_idx_max{std::nullopt};
 
+  int m_threads{1};
+
   void compute_norm_arg() & noexcept;
   void compute_nearest_idx_max() & noexcept;
 
@@ -61,10 +63,17 @@ class cpu_renderer {
  public:
   cpu_renderer() = default;
   cpu_renderer(const cpu_renderer&) = delete;
-  cpu_renderer(cpu_renderer&&) = default;
+  cpu_renderer(cpu_renderer&&) noexcept = default;
 
   cpu_renderer& operator=(const cpu_renderer&) = delete;
   cpu_renderer& operator=(cpu_renderer&&) = delete;
+
+  [[nodiscard]] inline int threads() const noexcept { return this->m_threads; }
+
+  void set_threads(int _th) & noexcept {
+    assert(_th > 0);
+    this->m_threads = _th;
+  }
 
   void set_data(fractal_utils::constant_view has_value,
                 fractal_utils::constant_view map_nearest_idx,
