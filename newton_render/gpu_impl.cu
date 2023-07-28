@@ -13,6 +13,8 @@
 
 namespace newton_fractal {
 
+constexpr int pixels_per_thread = 64;
+
 constexpr int ceil_up_to(int x, int divide) {
   if (x % divide == 0) {
     return x;
@@ -231,7 +233,7 @@ __global__ void render_image(
     const thrust::complex<double>*, fu::pixel_RGB* image_u8c3,
     const normalizer mag_normalizer, const normalizer arg_normalizer,
     fu::pixel_RGB color_nan, const render_config::render_method* methods,
-    int rows, int cols, int skip_rows, int skip_cols);
+    int num_methods, int rows, int cols, int skip_rows, int skip_cols);
 
 tl::expected<void, std::string> gpu_render_impl::set_data(
     fractal_utils::constant_view has_value,
@@ -253,9 +255,11 @@ tl::expected<void, std::string> gpu_render_impl::set_data(
   const int cols = has_value.cols();
   const int global_size = has_value.size();
 
-  constexpr int warp_size = 32;
+  constexpr int warp_size = 64;
 
-  const int global_required_threads = ceil_up_to(global_size, warp_size);
+  const int global_required_threads =
+      ceil_up_to(ceil_up_to(global_size, pixels_per_thread) / pixels_per_thread,
+                 warp_size);
   const int global_required_blocks = global_required_threads / warp_size;
   assert(global_required_threads % warp_size == 0);
 
@@ -295,9 +299,11 @@ gpu_render_impl::render(const render_config_gpu_interface& config,
     const size_t cols = internal::get_map(this->m_has_value_host).cols();
     const size_t global_size = internal::get_map(this->m_has_value_host).size();
 
-    constexpr size_t warp_size = 32;
-    const size_t size = (rows - 2 * skip_rows) * (cols - 2 * skip_cols);
-    const size_t required_threads = ceil_up_to(size, warp_size);
+    constexpr size_t warp_size = 64;
+    const size_t num_pixels = (rows - 2 * skip_rows) * (cols - 2 * skip_cols);
+    const size_t required_threads = ceil_up_to(
+        ceil_up_to(int(num_pixels), pixels_per_thread) / pixels_per_thread,
+        warp_size);
     const size_t required_blocks = required_threads / warp_size;
     assert(required_threads % warp_size == 0);
 
@@ -311,12 +317,16 @@ gpu_render_impl::render(const render_config_gpu_interface& config,
                    skip_rows, skip_cols, mag, arg);
     }
 
+    const size_t required_shared_mem =
+        config.num_methods() * sizeof(render_config::render_method);
+
     this->m_image.resize(global_size);
-    render_image<<<required_blocks, warp_size, 0, this->m_stream.get()>>>(
+    render_image<<<required_blocks, warp_size, required_shared_mem,
+                   this->m_stream.get()>>>(
         this->m_has_value.data().get(), this->m_nearest_index.data().get(),
         this->m_mag_arg.data().get(), this->m_image.data().get(), mag, arg,
-        config.color_for_nan(), config.method_ptr(), rows, cols, skip_rows,
-        skip_cols);
+        config.color_for_nan(), config.method_ptr(), config.num_methods(),
+        int(rows), int(cols), skip_rows, skip_cols);
     this->load_to_pinned_buffer(this->m_image, this->m_pinned_buffer_image);
 
     return fu::constant_view{
@@ -370,11 +380,15 @@ __global__ void complex_norm_arg_cvt(thrust::complex<double>* mag_arg,
   if (!has_value[global_index]) {
     return;
   }
-  const thrust::complex<double> src = mag_arg[global_index];
-  const double mag = abs(src);
-  const double angle = arg(src);
 
-  mag_arg[global_index] = thrust::complex<double>{mag, angle};
+  for (uint32_t pixel_index = global_index * pixels_per_thread;
+       pixel_index < (global_index + 1) * pixels_per_thread; pixel_index++) {
+    const thrust::complex<double> src = mag_arg[pixel_index];
+    const double mag = abs(src);
+    const double angle = arg(src);
+
+    mag_arg[pixel_index] = thrust::complex<double>{mag, angle};
+  }
 }
 
 void find_min_max(fu::constant_view has_value, fu::constant_view mag_arg,
@@ -410,19 +424,18 @@ void find_min_max(fu::constant_view has_value, fu::constant_view mag_arg,
   }
 }
 
-__global__ void render_image(
-    const bool* has_value, const uint8_t* nearest_index,
+__device__ void run_rendering(
+    uint32_t pixel_index, const bool* has_value, const uint8_t* nearest_index,
     const thrust::complex<double>* mag_and_arg, fu::pixel_RGB* image_u8c3,
-    const normalizer mag_normalizer, const normalizer arg_normalizer,
+    const normalizer& mag_normalizer, const normalizer& arg_normalizer,
     fu::pixel_RGB color_nan, const render_config::render_method* methods,
     int rows, int cols, int skip_rows, int skip_cols) {
-  const uint32_t thread_index = blockDim.x * blockIdx.x + threadIdx.x;
-  if (thread_index >= (rows - 2 * skip_rows) * (cols - 2 * skip_cols)) {
+  if (pixel_index >= (rows - 2 * skip_rows) * (cols - 2 * skip_cols)) {
     return;
   }
 
   const auto global_coord =
-      coordinate_of_index(rows, cols, skip_rows, skip_cols, (int)thread_index);
+      coordinate_of_index(rows, cols, skip_rows, skip_cols, (int)pixel_index);
 
   const auto mem_access_offset =
       global_index_of_coordinate(rows, cols, global_coord);
@@ -435,5 +448,34 @@ __global__ void render_image(
       render(methods, color_nan, has_value[mem_access_offset],
              nearest_index[mem_access_offset], (float)normalized_mag,
              (float)normalized_arg);
+}
+
+__global__ void render_image(
+    const bool* has_value, const uint8_t* nearest_index,
+    const thrust::complex<double>* mag_and_arg, fu::pixel_RGB* image_u8c3,
+    const normalizer mag_normalizer, const normalizer arg_normalizer,
+    fu::pixel_RGB color_nan, const render_config::render_method* methods_global,
+    int num_methods, int rows, int cols, int skip_rows, int skip_cols) {
+  __shared__ extern uint8_t shared_memory[];
+
+  auto* methods =
+      reinterpret_cast<render_config::render_method*>(shared_memory);
+
+  if (threadIdx.x == 0) {
+    for (int method_index = 0; method_index < num_methods; method_index++) {
+      methods[method_index] = methods_global[method_index];
+    }
+  }
+
+  __syncthreads();
+
+  const uint32_t thread_index = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint32_t pixel_index_beg = thread_index * pixels_per_thread;
+  for (uint32_t pidx_offset = 0; pidx_offset < pixels_per_thread;
+       pidx_offset++) {
+    run_rendering(pixel_index_beg + pidx_offset, has_value, nearest_index,
+                  mag_and_arg, image_u8c3, mag_normalizer, arg_normalizer,
+                  color_nan, methods, rows, cols, skip_rows, skip_cols);
+  }
 }
 }  // namespace newton_fractal
