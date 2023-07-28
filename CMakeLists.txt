@@ -51,6 +51,12 @@ add_compile_definitions("NEWTON_FRACTAL_VERSION_STR=\"${PROJECT_VERSION}\"")
 
 enable_testing()
 
+if (${MSVC})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX /arch:AVX2")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mavx2 -mfma")
+endif ()
+
 add_subdirectory(newton)
 add_subdirectory(newton_archive)
 add_subdirectory(newton_render)
