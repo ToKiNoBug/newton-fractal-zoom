@@ -332,7 +332,7 @@ std::optional<double> newton_zoomer::fps(size_t statistic_num) const noexcept {
     return std::nullopt;
   }
 
-  fmt::print("num_frames = {}\n", num_frames);
+  // fmt::print("num_frames = {}\n", num_frames);
 
   return double(num_frames - 1) / (latest_time - oldest_time);
 }
