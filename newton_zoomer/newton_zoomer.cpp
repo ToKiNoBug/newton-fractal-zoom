@@ -2,11 +2,13 @@
 // Created by joseph on 7/2/23.
 //
 
-#include "newton_zoomer.h"
 #include <fstream>
 #include <omp.h>
 #include <ranges>
 #include <thread>
+#include <QPushButton>
+#include "newton_zoomer.h"
+#include "point_form.h"
 
 newton_zoomer::newton_zoomer(QWidget *parent)
     : fractal_utils::zoom_window{parent} {
@@ -20,6 +22,11 @@ newton_zoomer::newton_zoomer(QWidget *parent)
   this->set_frame_file_extensions("*.nfar;*.nfar.zst;;*.json");
 
   this->setWindowTitle(this->m_title);
+
+  auto btn_edit_points = new QPushButton{"Edit points", this};
+  this->set_custom_widget(btn_edit_points);
+  connect(btn_edit_points, &QPushButton::clicked, this,
+          &newton_zoomer::when_btn_edit_points_clicked);
 }
 
 [[nodiscard]] std::unique_ptr<fu::wind_base> newton_zoomer::create_wind()
@@ -122,7 +129,7 @@ void newton_zoomer::render(std::any &archive, const fu::wind_base &wind,
   //      nf::render_config_gpu_interface::create();
 
   if (!this->gpu_render) {
-    ::cpu_renderer.set_threads(std::thread::hardware_concurrency());
+    ::cpu_renderer.set_threads((int)std::thread::hardware_concurrency());
     ::cpu_renderer.render(this->render_config, ar.map_has_result(),
                           ar.map_nearest_point_idx(),
                           ar.map_complex_difference(), image_u8c3, 0, 0);
@@ -335,4 +342,34 @@ std::optional<double> newton_zoomer::fps(size_t statistic_num) const noexcept {
   // fmt::print("num_frames = {}\n", num_frames);
 
   return double(num_frames - 1) / (latest_time - oldest_time);
+}
+
+void newton_zoomer::when_btn_edit_points_clicked() noexcept {
+  if (this->m_window_stack.empty()) {
+    return;
+  }
+
+  //  auto &archive =
+  //      std::any_cast<const nf::newton_archive
+  //      &>(this->current_result().archive);
+
+  auto eq = this->m_template_metadata.equation();
+  std::vector<std::complex<double>> points;
+  points.reserve(eq->order());
+  for (int idx = 0; idx < eq->order(); idx++) {
+    points.emplace_back(eq->point_at(idx));
+  }
+
+  auto wind = new point_form{points, this};
+  wind->setWindowFlag(Qt::WindowType::Dialog);
+  wind->setAttribute(Qt::WidgetAttribute::WA_DeleteOnClose);
+  wind->setAttribute(Qt::WidgetAttribute::WA_AlwaysStackOnTop);
+
+  connect(wind, &point_form::points_changed,
+          [this](std::span<const std::complex<double>> points) {
+            this->update_equation(points);
+            this->refresh_range_display();
+          });
+
+  wind->show();
 }

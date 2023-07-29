@@ -7,8 +7,17 @@ set(CMAKE_AUTOUIC ON)
 
 add_executable(nfzoom
     nfzoom.cpp
+
     newton_label.h
-    newton_label.cpp newton_zoomer.cpp newton_zoomer.h)
+    newton_label.cpp
+
+    newton_zoomer.h
+    newton_zoomer.cpp
+    
+    point_form.cpp
+    point_form.h
+    point_form.ui
+)
 target_link_libraries(nfzoom PRIVATE
     newton_archive
     newton_render

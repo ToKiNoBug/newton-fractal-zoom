@@ -76,6 +76,8 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   void on_btn_revert_clicked() final;
   void on_btn_repaint_clicked() final;
 
+  void when_btn_edit_points_clicked() noexcept;
+
  public:
   void update_equation(std::span<const std::complex<double>> points) & noexcept;
 };
