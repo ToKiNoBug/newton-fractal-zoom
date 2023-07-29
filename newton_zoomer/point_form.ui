@@ -25,7 +25,14 @@
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="QTableView" name="tv_buttons"/>
+    <widget class="QTableView" name="tv_buttons">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

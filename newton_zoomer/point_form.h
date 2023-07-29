@@ -32,7 +32,7 @@ class point_model : public QAbstractTableModel {
     if (qmi.isValid()) {
       return 0;
     }
-    return (int)this->m_points.size();
+    return (int)this->m_points.size() + 1;
   }
 
   [[nodiscard]] int columnCount(const QModelIndex &qmi) const final {
@@ -41,6 +41,9 @@ class point_model : public QAbstractTableModel {
     }
     return 2;
   }
+
+  [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation,
+                                    int role) const final;
 
   [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &qmi) const final;
 

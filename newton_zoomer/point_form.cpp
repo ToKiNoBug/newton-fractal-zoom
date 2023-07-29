@@ -25,9 +25,33 @@ void point_model::refresh_all_data() & noexcept {
       this->createIndex(this->rowCount({}), this->columnCount({})));
 }
 
+QVariant point_model::headerData(int section, Qt::Orientation orientation,
+                                 int role) const {
+  auto default_result =
+      QAbstractTableModel::headerData(section, orientation, role);
+  if (orientation == Qt::Orientation::Vertical ||
+      role != Qt::ItemDataRole::DisplayRole) {
+    return default_result;
+  }
+
+  switch (section) {
+    case 0:
+      return "Real part";
+    case 1:
+      return "Imaginary part";
+    default:
+      return default_result;
+  }
+}
+
 Qt::ItemFlags point_model::flags(const QModelIndex &qmi) const {
   if (!qmi.isValid()) {
     return QAbstractTableModel::flags(qmi);
+  }
+
+  if (qmi.row() >= this->m_points.size()) {
+    return Qt::ItemFlags{Qt::ItemFlag::ItemIsEnabled,
+                         Qt::ItemFlag::ItemIsEditable};
   }
 
   return Qt::ItemFlags{Qt::ItemFlag::ItemIsEnabled,
@@ -40,13 +64,16 @@ QVariant point_model::data(const QModelIndex &qmi, int role) const {
   if (!qmi.isValid()) {
     return default_result;
   }
-  if (qmi.row() >= this->rowCount({}) ||
+  if (qmi.row() >= this->rowCount({}) + 1 ||
       qmi.column() >= this->columnCount({})) {
     return default_result;
   }
 
   switch (role) {
     case Qt::ItemDataRole::DisplayRole: {
+      if (qmi.row() >= this->m_points.size()) {
+        return QString{"+"};
+      }
       const auto &cplx = this->m_points[qmi.row()];
       if (qmi.column() == 0) {
         return QString::number(cplx.real());
@@ -93,6 +120,14 @@ bool point_model::setData(const QModelIndex &qmi, const QVariant &data,
     return false;
   }
 
+  const bool is_size_changed = idx == this->m_points.size();
+  const int begin_insert_row_first = qmi.row();
+  const int begin_insert_row_last = begin_insert_row_first;
+  if (is_size_changed) {
+    this->beginInsertRows({}, begin_insert_row_first, begin_insert_row_last);
+    this->m_points.emplace_back(0, 0);
+  }
+
   const bool is_real = (qmi.column() == 0);
 
   auto &cplx_num = this->m_points[idx];
@@ -102,7 +137,11 @@ bool point_model::setData(const QModelIndex &qmi, const QVariant &data,
     cplx_num.imag(val);
   }
 
-  emit this->dataChanged(qmi, qmi, {Qt::ItemDataRole::DisplayRole});
+  if (is_size_changed) {
+    this->endInsertRows();
+  } else {
+    this->refresh_all_data();
+  }
 
   return true;
 }
