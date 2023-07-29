@@ -5,7 +5,7 @@
 #ifndef NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H
 #define NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H
 
-#include <QtWidgets>
+#include <QWidget>
 #include <scalable_label.h>
 #include <QLabel>
 #include <memory>
@@ -14,6 +14,8 @@
 #include <QEvent>
 #include <optional>
 #include <newton_fractal.h>
+#include <QMouseEvent>
+#include <QEnterEvent>
 
 class draggable_label;
 class newton_label;
@@ -27,6 +29,8 @@ struct draw_option {
 
 class draggable_label final : public QLabel {
  private:
+  bool m_draw_cross{false};
+
   [[nodiscard]] newton_label* impl_parent_label() const noexcept;
 
  public:
@@ -58,8 +62,18 @@ class draggable_label final : public QLabel {
   void mousePressEvent(QMouseEvent* e) override;
   void mouseMoveEvent(QMouseEvent* e) override;
 
+  void enterEvent(QEnterEvent* event) override;
+  void leaveEvent(QEvent* event) override;
+
   // void dragMoveEvent(QDragMoveEvent* e) override;
 };
+
+void draw_point(QPaintDevice& device, const QPoint& offset,
+                std::optional<int> number, const QFontMetrics& font_metrics,
+                const draw_option& option) noexcept;
+
+void draw_cross(QPaintDevice& device, const QPoint& offset,
+                const draw_option& option) noexcept;
 
 struct dragged_option {
   newton_label* label_ptr;
@@ -77,6 +91,8 @@ class newton_label final : public scalable_label {
  private:
   std::vector<label_point_pair> m_points;
   newton_zoomer* const m_zoomer;
+
+  std::optional<QPoint> m_drawable_point{std::nullopt};
 
  public:
   draw_option option;
@@ -100,6 +116,11 @@ class newton_label final : public scalable_label {
 
   void repaint_points(const fractal_utils::wind_base& wind) & noexcept;
 
+  void clear_drawable_point() & noexcept {
+    this->m_drawable_point.reset();
+    this->repaint();
+  }
+
   [[nodiscard]] draggable_label* extract_draggable_label(
       const QMimeData* src) const noexcept;
 
@@ -115,11 +136,16 @@ class newton_label final : public scalable_label {
  protected:
   void mousePressEvent(QMouseEvent* e) override;
 
+  void mouseMoveEvent(QMouseEvent* e) final;
+
   void dragEnterEvent(QDragEnterEvent* event) override;
 
   void dropEvent(QDropEvent* event) override;
   void dragMoveEvent(QDragMoveEvent* e) override;
-  std::optional<double> fps(double max_counted_time_span);
+
+  void paintEvent(QPaintEvent* e) override;
+
+  void leaveEvent(QEvent* e) override;
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H

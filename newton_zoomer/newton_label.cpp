@@ -1,32 +1,76 @@
 #include "newton_label.h"
 #include <QPainter>
 #include <memory>
-#include "newton_zoomer.h"
+#include <QtWidgets>
 #include <fmt/format.h>
+#include "newton_zoomer.h"
 
 draggable_label::draggable_label(QWidget *parent) : QLabel(parent) {}
 
-void draggable_label::draw(int index, const draw_option &option) & noexcept {
-  this->resize(option.icon_size, option.icon_size);
-
-  QPainter painter{this};
+void draw_point(QPaintDevice &device, const QPoint &offset,
+                std::optional<int> number, const QFontMetrics &font_metrics,
+                const draw_option &option) noexcept {
+  QPainter painter{&device};
   {
     QBrush brush{QColor{option.background_color}};
     painter.setBrush(brush);
     QPen pen{QColor{option.text_color}};
     painter.setPen(pen);
   }
-  painter.fillRect(QRect{QPoint{0, 0}, this->size()}, QColor{0, 0, 0, 0});
-  painter.drawEllipse(QRect{QPoint{0, 0}, this->size()});
-  const auto text = QString::number(index);
-  const auto text_rect = this->fontMetrics().tightBoundingRect(text);
-  const float h_spacing =
-      std::max(0.0f, float(this->height() - text_rect.height()) / 2);
-  const float w_spacing =
-      std::max(0.0f, float(this->width() - text_rect.width()) / 2);
+  {
+    const QSize device_size{device.width(), device.height()};
+    painter.fillRect(QRect{QPoint{0, 0}, device_size}, QColor{0, 0, 0, 0});
+    painter.drawEllipse(
+        QRect{offset, QSize{option.icon_size, option.icon_size}});
+  }
+  if (number.has_value()) {
+    const auto text = QString::number(number.value());
+    const auto text_rect = font_metrics.tightBoundingRect(text);
+    const float h_spacing =
+        std::max(0.0f, float(device.height() - text_rect.height()) / 2) +
+        float(offset.y());
+    const float w_spacing =
+        std::max(0.0f, float(device.width() - text_rect.width()) / 2) +
+        float(offset.x());
 
-  painter.drawText(QPointF{w_spacing, h_spacing}, text);
+    painter.drawText(QPointF{w_spacing, h_spacing}, text);
+  }
   painter.end();
+}
+
+void draw_cross(QPaintDevice &device, const QPoint &offset,
+                const draw_option &option) noexcept {
+  QPainter painter{&device};
+  QPen pen_red{QColor{Qt::GlobalColor::red}};
+  QPen pen_white{QColor{Qt::GlobalColor::white}};
+  pen_white.setWidth(3);
+  pen_red.setWidth(2);
+
+  const QSize device_size{device.width(), device.height()};
+  painter.fillRect(QRect{QPoint{0, 0}, device_size}, QColor{0, 0, 0, 0});
+
+  auto fun_draw = [offset, option, &painter]() {
+    painter.drawLine(offset,
+                     offset + QPoint{option.icon_size, option.icon_size});
+    painter.drawLine(offset + QPoint{0, +option.icon_size},
+                     offset + QPoint{+option.icon_size, 0});
+  };
+  painter.setPen(pen_white);
+  fun_draw();
+  painter.setPen(pen_red);
+  fun_draw();
+
+  painter.end();
+}
+
+void draggable_label::draw(int index, const draw_option &option) & noexcept {
+  this->resize(option.icon_size, option.icon_size);
+
+  draw_point(*this, {0, 0}, index, this->fontMetrics(), option);
+  if (this->m_draw_cross) {
+    draw_cross(*this, {0, 0}, option);
+    // this->m_draw_cross = false;
+  }
 }
 
 void draggable_label::draw() & noexcept {
@@ -50,8 +94,8 @@ std::optional<int> draggable_label::index() const noexcept {
 }
 
 void draggable_label::paintEvent(QPaintEvent *e) {
-  this->draw();
   QLabel::paintEvent(e);
+  this->draw();
 }
 
 void draggable_label::mousePressEvent(QMouseEvent *e) {
@@ -61,6 +105,21 @@ void draggable_label::mousePressEvent(QMouseEvent *e) {
 }
 
 const QString mime_data_tag_NF_private{"self_this_pointer"};
+
+void draggable_label::enterEvent(QEnterEvent *event) {
+  this->parent_label()->clear_drawable_point();
+
+  if (this->parent_label()->zoomer()->cursor_state() ==
+      cursor_state_t::erase_point) {
+    this->m_draw_cross = true;
+    this->repaint();
+  }
+}
+
+void draggable_label::leaveEvent(QEvent *event) {
+  this->m_draw_cross = false;
+  this->repaint();
+}
 
 void draggable_label::mouseMoveEvent(QMouseEvent *event) {
   if (!event->buttons() & Qt::MouseButton::LeftButton) {
@@ -76,15 +135,15 @@ void draggable_label::mouseMoveEvent(QMouseEvent *event) {
   //  }
   // fmt::print("startDragDistance = {}\n", QApplication::startDragDistance());
 
-  QDrag *drag = new QDrag{this};
-  QMimeData *mimedata = new QMimeData;
+  auto *drag = new QDrag{this};
+  auto *mime_data = new QMimeData;
   {
     auto self = this;
-    mimedata->setData(mime_data_tag_NF_private,
-                      QByteArray{(const char *)&self, sizeof(self)});
+    mime_data->setData(mime_data_tag_NF_private,
+                       QByteArray{(const char *)&self, sizeof(void *)});
   }
-  drag->setMimeData(mimedata);
-  Qt::DropAction da = drag->exec(Qt::MoveAction);
+  drag->setMimeData(mime_data);
+  drag->exec(Qt::MoveAction);
 
   //  fmt::print("draggable_label::mouseMoveEvent: event->pos = [{}, {}]\n",
   //             event->pos().x(), event->pos().y());
@@ -100,7 +159,7 @@ void draggable_label::mouseMoveEvent(QMouseEvent *event) {
 newton_label::newton_label(newton_zoomer *parent)
     : scalable_label(parent), m_zoomer{parent} {
   this->setAcceptDrops(true);
-};
+}
 
 // void draggable_label::dragMoveEvent(QDragMoveEvent* event) {
 //   auto event_pos = event->position().toPoint();
@@ -127,8 +186,8 @@ void newton_label::repaint_point(
   const int _width = this->width();
   const int _height = this->height();
 
-  int w_pos = int(x_offset * _width + _width / 2);
-  int h_pos = int(-y_offset * _height + _height / 2);
+  int w_pos = int(x_offset * _width + double(_width) / 2);
+  int h_pos = int(-y_offset * _height + double(_height) / 2);
 
   if (w_pos < 0 || w_pos >= this->width() || h_pos < 0 ||
       h_pos >= this->height()) {
@@ -173,6 +232,23 @@ void newton_label::mousePressEvent(QMouseEvent *e) {
   //  }
 
   scalable_label::mousePressEvent(e);
+}
+
+void newton_label::mouseMoveEvent(QMouseEvent *e) {
+  switch (this->m_zoomer->cursor_state()) {
+    case cursor_state_t::add_point:
+    case cursor_state_t::erase_point:
+      this->m_drawable_point = e->pos();
+      this->repaint();
+      break;
+    default:
+      if (this->m_drawable_point.has_value()) {
+        this->m_drawable_point.reset();
+        this->repaint();
+      }
+      break;
+  }
+  scalable_label::mouseMoveEvent(e);
 }
 
 void newton_label::reset(const nf::newton_equation_base &equation) & noexcept {
@@ -301,4 +377,28 @@ void newton_label::dragMoveEvent(QDragMoveEvent *event) {
   //    auto current_pos = this->pos() + event_pos;
   //    fmt::print("newton_label::dragMoveEvent: current pos = [{}, {}]\n",
   //               current_pos.x(), current_pos.y());
+}
+
+void newton_label::paintEvent(QPaintEvent *e) {
+  scalable_label::paintEvent(e);
+
+  if (this->m_drawable_point.has_value()) {
+    auto offset = this->m_drawable_point.value();
+    switch (this->m_zoomer->cursor_state()) {
+      case cursor_state_t::add_point:
+        draw_point(*this, offset, std::nullopt, this->fontMetrics(),
+                   this->option);
+        break;
+      case cursor_state_t::erase_point:
+        draw_cross(*this, offset, this->option);
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void newton_label::leaveEvent(QEvent *e) {
+  this->m_drawable_point.reset();
+  this->repaint();
 }

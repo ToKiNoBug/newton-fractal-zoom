@@ -6,7 +6,8 @@
 #include <omp.h>
 #include <ranges>
 #include <thread>
-#include <QPushButton>
+#include <QMessageBox>
+#include "zoomer_custom_widget.h"
 #include "newton_zoomer.h"
 #include "point_form.h"
 
@@ -23,10 +24,14 @@ newton_zoomer::newton_zoomer(QWidget *parent)
 
   this->setWindowTitle(this->m_title);
 
-  auto btn_edit_points = new QPushButton{"Edit points", this};
-  this->set_custom_widget(btn_edit_points);
-  connect(btn_edit_points, &QPushButton::clicked, this,
+  auto custom_widgets = new zoomer_custom_widget{this};
+  this->set_custom_widget(custom_widgets);
+  connect(custom_widgets->pushbutton_edit_points(), &QPushButton::clicked, this,
           &newton_zoomer::when_btn_edit_points_clicked);
+  connect(custom_widgets->toolbutton_add_point(), &QToolButton::clicked, this,
+          &newton_zoomer::when_btn_add_point_clicked);
+  connect(custom_widgets->toolbutton_erase_point(), &QToolButton::clicked, this,
+          &newton_zoomer::when_btn_erase_point_clicked);
 }
 
 [[nodiscard]] std::unique_ptr<fu::wind_base> newton_zoomer::create_wind()
@@ -372,4 +377,21 @@ void newton_zoomer::when_btn_edit_points_clicked() noexcept {
           });
 
   wind->show();
+}
+
+void newton_zoomer::keyPressEvent(QKeyEvent *event) {
+  if (event->key() == Qt::Key::Key_Escape) {
+    this->set_cursor_state(cursor_state_t::none);
+    return;
+  }
+
+  zoom_window::keyPressEvent(event);
+}
+
+void newton_zoomer::when_btn_add_point_clicked() noexcept {
+  this->set_cursor_state(cursor_state_t::add_point);
+}
+
+void newton_zoomer::when_btn_erase_point_clicked() noexcept {
+  this->set_cursor_state(cursor_state_t::erase_point);
 }

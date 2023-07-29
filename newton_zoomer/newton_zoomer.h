@@ -10,6 +10,8 @@
 #include <newton_render.h>
 #include <list>
 
+#include <QKeyEvent>
+
 extern nf::cpu_renderer cpu_renderer;
 extern tl::expected<std::unique_ptr<nf::gpu_render>, std::string>
     gpu_renderer_exp;
@@ -17,12 +19,15 @@ extern tl::expected<std::unique_ptr<nf::render_config_gpu_interface>,
                     std::string>
     gpu_render_config_exp;
 
+enum class cursor_state_t : uint8_t { none, add_point, erase_point };
 class newton_zoomer final : public fractal_utils::zoom_window {
  private:
   newton_fractal::meta_data m_template_metadata;
   mutable std::list<double> m_computation_log;
 
   QString m_title{"Newton fractal zoomer"};
+
+  cursor_state_t m_cursor_state{cursor_state_t::none};
 
  public:
   explicit newton_zoomer(QWidget *parent = nullptr);
@@ -31,6 +36,14 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   nf::render_config render_config;
   bool auto_precision{false};
   bool gpu_render{false};
+
+  [[nodiscard]] inline auto cursor_state() const noexcept {
+    return this->m_cursor_state;
+  }
+
+  inline void set_cursor_state(cursor_state_t cs) & noexcept {
+    this->m_cursor_state = cs;
+  }
 
   [[nodiscard]] inline auto &template_metadata() noexcept {
     return this->m_template_metadata;
@@ -78,8 +91,14 @@ class newton_zoomer final : public fractal_utils::zoom_window {
 
   void when_btn_edit_points_clicked() noexcept;
 
+  void when_btn_add_point_clicked() noexcept;
+  void when_btn_erase_point_clicked() noexcept;
+
  public:
   void update_equation(std::span<const std::complex<double>> points) & noexcept;
+
+ protected:
+  void keyPressEvent(QKeyEvent *event) final;
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_ZOOMER_H

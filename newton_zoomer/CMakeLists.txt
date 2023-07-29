@@ -13,10 +13,13 @@ add_executable(nfzoom
 
     newton_zoomer.h
     newton_zoomer.cpp
-    
+
     point_form.cpp
     point_form.h
     point_form.ui
+    zoomer_custom_widget.cpp
+    zoomer_custom_widget.h
+    zoomer_custom_widget.ui
 )
 target_link_libraries(nfzoom PRIVATE
     newton_archive
