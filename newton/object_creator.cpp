@@ -346,7 +346,8 @@ class object_creator_by_prec
   object_creator_by_prec(const object_creator_by_prec&) noexcept = default;
   object_creator_by_prec(object_creator_by_prec&&) noexcept = default;
 
-  [[nodiscard]] std::unique_ptr<object_creator> copy() const noexcept override {
+  [[nodiscard]] virtual std::unique_ptr<object_creator> copy()
+      const noexcept override {
     return std::make_unique<object_creator_by_prec>(*this);
   }
 
@@ -409,6 +410,10 @@ class cuda_object_creator : public object_creator_by_prec<precision> {
     return gpu_backend::cuda;
   }
 
+  [[nodiscard]] std::unique_ptr<object_creator> copy() const noexcept override {
+    return std::make_unique<cuda_object_creator>(*this);
+  }
+
   [[nodiscard]] tl::expected<std::unique_ptr<newton_equation_base>, std::string>
   create_equation(const njson& nj) const noexcept override {
     auto points = this->decode_points(nj);
@@ -435,6 +440,10 @@ class opencl_object_creator : public object_creator_by_prec<precision> {
 
   [[nodiscard]] gpu_backend gpu() const noexcept final {
     return gpu_backend::opencl;
+  }
+
+  [[nodiscard]] std::unique_ptr<object_creator> copy() const noexcept override {
+    return std::make_unique<opencl_object_creator>(*this);
   }
 
   [[nodiscard]] std::optional<opencl_option_t> opencl_option()
