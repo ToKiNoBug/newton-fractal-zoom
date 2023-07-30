@@ -37,6 +37,10 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   bool auto_precision{false};
   bool gpu_render{false};
 
+  [[nodiscard]] inline auto render_config_capacity() const noexcept {
+    return this->render_config.methods.size();
+  }
+
   [[nodiscard]] inline auto cursor_state() const noexcept {
     return this->m_cursor_state;
   }

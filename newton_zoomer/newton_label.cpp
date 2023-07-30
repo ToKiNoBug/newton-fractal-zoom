@@ -233,6 +233,18 @@ void newton_label::mousePressEvent(QMouseEvent *e) {
 
   switch (current_cursor_state) {
     case cursor_state_t::add_point: {
+      {
+        const auto capacity = this->zoomer()->render_config_capacity();
+        if (this->m_points.size() + 1 > capacity) {
+          QMessageBox::warning(
+              this, "Can not add more points",
+              QStringLiteral(
+                  "The assigned render config can hold only %1 points")
+                  .arg(capacity));
+          return;
+        }
+      }
+
       const auto pos = e->pos();
       auto coord =
           this->m_zoomer->template_metadata().window()->displayed_coordinate(
