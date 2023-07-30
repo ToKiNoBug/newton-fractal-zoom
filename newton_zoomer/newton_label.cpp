@@ -213,25 +213,30 @@ void newton_label::repaint_point(const fractal_utils::wind_base &wind,
 }
 
 void newton_label::mousePressEvent(QMouseEvent *e) {
-  //  if (e->buttons() & Qt::MouseButton::LeftButton) {
-  //    for (size_t idx = 0; idx < this->m_points.size(); idx++) {
-  //      auto& point = this->m_points[idx];
-  //      if (point.label->geometry().contains(e->pos())) {
-  //        QMimeData* md = new QMimeData;
-  //        {
-  //          dragged_option opt{this, idx};
-  //          md->setData("info", QByteArray{(const char*)&opt, sizeof(opt)});
-  //        }
-  //        QDrag* drag = new QDrag{this};
-  //
-  //        drag->setMimeData(md);
-  //
-  //        Qt::DropAction da = drag->exec();
-  //      }
-  //    }
-  //  }
+  const auto current_cursor_state = this->m_zoomer->cursor_state();
 
-  scalable_label::mousePressEvent(e);
+  switch (current_cursor_state) {
+    case cursor_state_t::add_point: {
+      const auto pos = e->pos();
+      auto coord =
+          this->m_zoomer->template_metadata().window()->displayed_coordinate(
+              {this->height(), this->width()}, {pos.y(), pos.x()});
+
+      label_point_pair temp;
+      temp.coordinate = {coord[0], coord[1]};
+      temp.label = std::make_unique<draggable_label>(this);
+      this->m_points.emplace_back(std::move(temp));
+      auto current_points = this->current_points();
+      this->m_zoomer->update_equation(current_points);
+      this->repaint_points(*this->m_zoomer->template_metadata().window());
+      break;
+    }
+    case cursor_state_t::erase_point:
+      return;
+    case cursor_state_t::none:
+      scalable_label::mousePressEvent(e);
+      return;
+  }
 }
 
 void newton_label::mouseMoveEvent(QMouseEvent *e) {
