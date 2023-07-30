@@ -99,6 +99,12 @@ void draggable_label::paintEvent(QPaintEvent *e) {
 }
 
 void draggable_label::mousePressEvent(QMouseEvent *e) {
+  if (this->m_draw_cross && this->parent_label()->zoomer()->cursor_state() ==
+                                cursor_state_t::erase_point) {
+    emit this->erased(this);
+    return;
+  }
+
   if (e->buttons() & Qt::MouseButton::LeftButton) {
     this->point_before_drag = e->pos();
   }
@@ -212,6 +218,16 @@ void newton_label::repaint_point(const fractal_utils::wind_base &wind,
   this->repaint_point(wind, pair.label.get(), pair.coordinate);
 }
 
+newton_label::label_point_pair newton_label::make_draggable_label(
+    std::complex<double> coord) & noexcept {
+  label_point_pair ret;
+  ret.coordinate = coord;
+  ret.label = std::make_unique<draggable_label>(this);
+  connect(ret.label.get(), &draggable_label::erased, this,
+          &newton_label::when_point_erased);
+  return ret;
+}
+
 void newton_label::mousePressEvent(QMouseEvent *e) {
   const auto current_cursor_state = this->m_zoomer->cursor_state();
 
@@ -222,10 +238,8 @@ void newton_label::mousePressEvent(QMouseEvent *e) {
           this->m_zoomer->template_metadata().window()->displayed_coordinate(
               {this->height(), this->width()}, {pos.y(), pos.x()});
 
-      label_point_pair temp;
-      temp.coordinate = {coord[0], coord[1]};
-      temp.label = std::make_unique<draggable_label>(this);
-      this->m_points.emplace_back(std::move(temp));
+      this->m_points.emplace_back(
+          this->make_draggable_label({coord[0], coord[1]}));
       auto current_points = this->current_points();
       this->m_zoomer->update_equation(current_points);
       this->repaint_points(*this->m_zoomer->template_metadata().window());
@@ -261,10 +275,8 @@ void newton_label::reset(const nf::newton_equation_base &equation) & noexcept {
   this->m_points.reserve(equation.order());
 
   for (int o = 0; o < equation.order(); o++) {
-    label_point_pair temp;
-    temp.coordinate = equation.point_at(o);
-    temp.label = std::make_unique<draggable_label>(this);
-    this->m_points.emplace_back(std::move(temp));
+    this->m_points.emplace_back(
+        this->make_draggable_label(equation.point_at(o)));
   }
 }
 
@@ -406,4 +418,28 @@ void newton_label::paintEvent(QPaintEvent *e) {
 void newton_label::leaveEvent(QEvent *e) {
   this->m_drawable_point.reset();
   this->repaint();
+}
+
+void newton_label::when_point_erased(draggable_label *lb) {
+  const auto idx_opt = this->extract_index(lb);
+  if (!idx_opt.has_value()) {
+    return;
+  }
+
+  if (this->m_points.size() <= 2) {
+    QMessageBox::warning(
+        this, "Can not erase this point",
+        QStringLiteral(
+            "There are only %1 points, but expected at least 2 points.")
+            .arg(this->m_points.size()));
+    return;
+  }
+
+  const auto idx = idx_opt.value();
+
+  this->m_points.erase(this->m_points.begin() + int64_t(idx));
+
+  const auto current_points = this->current_points();
+  this->zoomer()->update_equation(current_points);
+  this->repaint_points(*this->zoomer()->template_metadata().window());
 }

@@ -28,6 +28,7 @@ struct draw_option {
 };
 
 class draggable_label final : public QLabel {
+  Q_OBJECT
  private:
   bool m_draw_cross{false};
 
@@ -53,6 +54,7 @@ class draggable_label final : public QLabel {
   }
 
  signals:
+  void erased(draggable_label* self);
   //  void dragged(draggable_label* self, QPoint pos);
   //  void released(draggable_label* self);
 
@@ -81,7 +83,7 @@ struct dragged_option {
 };
 
 class newton_label final : public scalable_label {
-  // Q_OBJECT
+  Q_OBJECT
  public:
   struct label_point_pair {
     std::unique_ptr<draggable_label> label{nullptr};
@@ -121,6 +123,9 @@ class newton_label final : public scalable_label {
     this->repaint();
   }
 
+  [[nodiscard]] label_point_pair make_draggable_label(
+      std::complex<double> coord) & noexcept;
+
   [[nodiscard]] draggable_label* extract_draggable_label(
       const QMimeData* src) const noexcept;
 
@@ -146,6 +151,9 @@ class newton_label final : public scalable_label {
   void paintEvent(QPaintEvent* e) override;
 
   void leaveEvent(QEvent* e) override;
+
+ private slots:
+  void when_point_erased(draggable_label* lb);
 };
 
 #endif  // NEWTON_FRACTAL_ZOOM_NEWTON_LABEL_H
