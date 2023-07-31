@@ -269,6 +269,19 @@ class cuda_equation_impl : public cuda_computer<float_t> {
                    opt.f64complex_difference.data());
   }
 
+  static bool check_constant_memory() {
+    auto err =
+        cudaGetSymbolAddress(nullptr, internal::const_parameters<float_t>);
+    if (err != cudaSuccess) {
+      return false;
+    }
+    err = cudaGetSymbolAddress(nullptr, internal::const_points<float_t>);
+    if (err != cudaSuccess) {
+      return false;
+    }
+    return true;
+  }
+
  public:
   using real_t = float_t;
   using complex_t = thrust::complex<float_t>;
@@ -281,7 +294,10 @@ class cuda_equation_impl : public cuda_computer<float_t> {
     assert(opt.bool_has_result.cols() == opt.f64complex_difference.cols());
     assert(opt.f64complex_difference.cols() == opt.u8_nearest_point_idx.cols());
 
+    const bool is_constant_memory_ok = check_constant_memory();
+
     const bool use_const_memory =
+        is_constant_memory_ok &&
         internal::const_memory_lock<float_t>.try_lock();
 
     if (use_const_memory) {
