@@ -32,7 +32,7 @@ class point_model : public QAbstractTableModel {
     if (qmi.isValid()) {
       return 0;
     }
-    return (int)this->m_points.size() + 1;
+    return (int)this->m_points.size();
   }
 
   [[nodiscard]] int columnCount(const QModelIndex &qmi) const final {
