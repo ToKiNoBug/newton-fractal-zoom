@@ -26,6 +26,8 @@ class zoomer_custom_widget final : public QWidget {
   [[nodiscard]] QToolButton *toolbutton_add_point() const noexcept;
   [[nodiscard]] QToolButton *toolbutton_erase_point() const noexcept;
 
+  void retranslate_ui() & noexcept;
+
  private:
   Ui::zoomer_custom_widget *ui;
 };

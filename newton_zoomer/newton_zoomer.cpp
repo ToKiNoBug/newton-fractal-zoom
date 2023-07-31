@@ -7,6 +7,7 @@
 #include <ranges>
 #include <thread>
 #include <QMessageBox>
+#include <QCoreApplication>
 #include "zoomer_custom_widget.h"
 #include "newton_zoomer.h"
 #include "point_form.h"
@@ -98,13 +99,12 @@ void newton_zoomer::compute(const fu::wind_base &wind,
                                     opt);
     } catch (const std::exception &e) {
       has_exception = true;
-      err_message = QStringLiteral(
-                        "Exception caught during computation, may be a "
-                        "gpu-related error. Detail:\n%1")
+      err_message = tr("Exception caught during computation, may be a "
+                       "gpu-related error. Detail:\n%1")
                         .arg(e.what());
     } catch (...) {
       has_exception = true;
-      err_message = QStringLiteral(
+      err_message = tr(
           "Unknown exception caught, we can not retrieve any error message.");
     }
     if (has_exception) {
@@ -216,7 +216,7 @@ QString newton_zoomer::export_frame(QString _filename,
   const std::string filename = _filename.toLocal8Bit().data();
   auto *ar_ptr = std::any_cast<newton_fractal::newton_archive>(&custom);
   if (ar_ptr == nullptr) {
-    return QStringLiteral(
+    return tr(
         "The passed std::any reference is not a newton_archive instance.");
   }
 
@@ -253,9 +253,9 @@ void newton_zoomer::received_wheel_move(std::array<int, 2> pos,
     auto err = new_objc->set_precision(*cur.wind);
     if (!err.has_value()) {
       QMessageBox::critical(
-          this, "Failed to update precision for window",
-          QStringLiteral("object_creator::set_precision(fu::wind&) failed with "
-                         "following information:\n%1")
+          this, tr("Failed to update precision for window"),
+          tr("object_creator::set_precision(fu::wind&) failed with "
+             "following information:\n%1")
               .arg(err.error().data()));
       exit(1);
     }
@@ -394,4 +394,37 @@ void newton_zoomer::when_btn_add_point_clicked() noexcept {
 
 void newton_zoomer::when_btn_erase_point_clicked() noexcept {
   this->set_cursor_state(cursor_state_t::erase_point);
+}
+
+QString newton_zoomer::set_language(fu::language_t lang) & noexcept {
+  auto err = zoom_window::set_language(lang);
+  if (!err.isEmpty()) {
+    return err;
+  }
+
+  QString translator_file;
+  switch (lang) {
+    case fu::language_t::en_US:
+      QCoreApplication::removeTranslator(&this->m_translator_newton_zoomer);
+      return {};
+    case fu::language_t::zh_CN:
+      translator_file = ":/i18n/nfzoom_zh_CN.qm";
+      break;
+  }
+
+  {
+    const bool ok = this->m_translator_newton_zoomer.load(translator_file);
+    if (!ok) {
+      return QStringLiteral("Failed to load %1").arg(translator_file);
+    }
+  }
+  {
+    const bool ok =
+        QCoreApplication::installTranslator(&this->m_translator_newton_zoomer);
+    if (!ok) {
+      return QStringLiteral("Failed to install %1").arg(translator_file);
+    }
+  }
+  dynamic_cast<zoomer_custom_widget *>(this->custom_widget())->retranslate_ui();
+  return {};
 }

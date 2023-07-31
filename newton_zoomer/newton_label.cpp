@@ -1,8 +1,8 @@
-#include "newton_label.h"
 #include <QPainter>
 #include <memory>
 #include <QtWidgets>
 #include <fmt/format.h>
+#include "newton_label.h"
 #include "newton_zoomer.h"
 
 draggable_label::draggable_label(QWidget *parent) : QLabel(parent) {}
@@ -237,9 +237,8 @@ void newton_label::mousePressEvent(QMouseEvent *e) {
         const auto capacity = this->zoomer()->render_config_capacity();
         if (this->m_points.size() + 1 > capacity) {
           QMessageBox::warning(
-              this, "Can not add more points",
-              QStringLiteral(
-                  "The assigned render config can hold only %1 points")
+              this, tr("Can not add more points"),
+              tr("The assigned render config can hold only %1 points")
                   .arg(capacity));
           return;
         }
@@ -440,9 +439,8 @@ void newton_label::when_point_erased(draggable_label *lb) {
 
   if (this->m_points.size() <= 2) {
     QMessageBox::warning(
-        this, "Can not erase this point",
-        QStringLiteral(
-            "There are only %1 points, but expected at least 2 points.")
+        this, tr("Can not erase this point"),
+        tr("There are only %1 points, but expected at least 2 points.")
             .arg(this->m_points.size()));
     return;
   }

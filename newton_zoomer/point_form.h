@@ -19,6 +19,7 @@ class point_form;
 QT_END_NAMESPACE
 
 class point_model : public QAbstractTableModel {
+  Q_OBJECT
  private:
   std::vector<std::complex<double>> m_points;
 

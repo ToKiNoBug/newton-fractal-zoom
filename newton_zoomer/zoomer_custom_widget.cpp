@@ -15,6 +15,10 @@ zoomer_custom_widget::zoomer_custom_widget(QWidget *parent)
 
 zoomer_custom_widget::~zoomer_custom_widget() { delete ui; }
 
+void zoomer_custom_widget::retranslate_ui() & noexcept {
+  this->ui->retranslateUi(this);
+}
+
 QPushButton *zoomer_custom_widget::pushbutton_edit_points() const noexcept {
   return this->ui->pb_edit_points;
 }

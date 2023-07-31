@@ -9,6 +9,7 @@
 #include <newton_archive.h>
 #include <newton_render.h>
 #include <list>
+#include <QTranslator>
 
 #include <QKeyEvent>
 
@@ -21,6 +22,7 @@ extern tl::expected<std::unique_ptr<nf::render_config_gpu_interface>,
 
 enum class cursor_state_t : uint8_t { none, add_point, erase_point };
 class newton_zoomer final : public fractal_utils::zoom_window {
+  Q_OBJECT
  private:
   newton_fractal::meta_data m_template_metadata;
   mutable std::list<double> m_computation_log;
@@ -29,6 +31,8 @@ class newton_zoomer final : public fractal_utils::zoom_window {
 
   cursor_state_t m_cursor_state{cursor_state_t::none};
 
+  QTranslator m_translator_newton_zoomer;
+
  public:
   explicit newton_zoomer(QWidget *parent = nullptr);
   ~newton_zoomer() final = default;
@@ -36,6 +40,8 @@ class newton_zoomer final : public fractal_utils::zoom_window {
   nf::render_config render_config;
   bool auto_precision{false};
   bool gpu_render{false};
+
+  QString set_language(fu::language_t lang) & noexcept final;
 
   [[nodiscard]] inline auto render_config_capacity() const noexcept {
     return this->render_config.methods.size();

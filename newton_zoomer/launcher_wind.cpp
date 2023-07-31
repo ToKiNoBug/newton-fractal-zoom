@@ -23,8 +23,7 @@ tl::expected<void, QString> launcher_wind::grab_compute_configs(
     const QString &dir_path) & noexcept {
   QDir dir{dir_path};
   if (!dir.exists()) {
-    return tl::make_unexpected(
-        QStringLiteral("%1 doesn't exists.").arg(dir_path));
+    return tl::make_unexpected(tr("%1 doesn't exists.").arg(dir_path));
   }
 
   this->ui->cb_compute->clear();
@@ -48,8 +47,7 @@ tl::expected<void, QString> launcher_wind::grab_render_configs(
     const QString &dir_path) & noexcept {
   QDir dir{dir_path};
   if (!dir.exists()) {
-    return tl::make_unexpected(
-        QStringLiteral("%1 doesn't exists.").arg(dir_path));
+    return tl::make_unexpected(tr("%1 doesn't exists.").arg(dir_path));
   }
 
   this->ui->cb_render->clear();
@@ -81,12 +79,16 @@ void launcher_wind::on_pb_start_clicked() noexcept {
   //  }
 
 #if WIN32
-  if (compute_src.contains("mpfr")) {
+  constexpr bool win32 = true;
+#else
+  constexpr bool win32 = false;
+#endif
+  if (win32 && compute_src.contains("mpfr")) {
     auto choice = QMessageBox::warning(
         this, "Incorrect computation config",
-        QStringLiteral("%1 seems to require mpfr, which is only available on "
-                       "Linux. nfzoom may not be launched successfully, are "
-                       "you sure to continue?")
+        tr("%1 seems to require mpfr, which is only available on "
+           "Linux. nfzoom may not be launched successfully, are "
+           "you sure to continue?")
             .arg(compute_src),
         QMessageBox::StandardButtons{QMessageBox::StandardButton::Yes,
                                      QMessageBox::StandardButton::No});
@@ -94,7 +96,6 @@ void launcher_wind::on_pb_start_clicked() noexcept {
       return;
     }
   }
-#endif
 
   QString args = QStringLiteral("%1#--rj#%2#--scale#%3")
                      .arg(compute_src, render_json)
@@ -106,8 +107,8 @@ void launcher_wind::on_pb_start_clicked() noexcept {
 
   auto ok = QProcess::startDetached("./nfzoom", arg_list, "");
   if (!ok) {
-    QMessageBox::warning(this, "Failed to start detached process",
-                         QStringLiteral("arguments: %1").arg(args));
+    QMessageBox::warning(this, tr("Failed to start detached process"),
+                         tr("arguments: %1").arg(args));
     return;
   }
 }

@@ -104,5 +104,12 @@ int main(int argc, char **argv) {
 
   zoomer.show();
 
+  {
+    QLocale locale;
+    if (locale.language() == QLocale::Language::Chinese) {
+      zoomer.set_language(fu::language_t::zh_CN);
+    }
+  }
+
   return qapp.exec();
 }

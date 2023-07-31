@@ -36,9 +36,9 @@ QVariant point_model::headerData(int section, Qt::Orientation orientation,
 
   switch (section) {
     case 0:
-      return "Real part";
+      return tr("Real part");
     case 1:
-      return "Imaginary part";
+      return tr("Imaginary part");
     default:
       return default_result;
   }
@@ -86,10 +86,10 @@ QVariant point_model::data(const QModelIndex &qmi, int role) const {
 
     case Qt::ItemDataRole::WhatsThisRole: {
       if (qmi.column() == 0) {
-        return QStringLiteral("The real part of a point");
+        return tr("The real part of a point");
       }
       if (qmi.column() == 1) {
-        return QStringLiteral("The imaginary part of a point");
+        return tr("The imaginary part of a point");
       }
       return default_result;
     }
