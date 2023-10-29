@@ -40,6 +40,10 @@ class video_executor : public fu::video_executor_base {
       std::string_view filename, std::span<uint8_t> buffer,
       std::any &archive) const noexcept final;
 
+  [[nodiscard]] std::vector<uint8_t> compute_task_status(
+      std::string &buf_filename, std::any &buf_archive,
+      std::span<uint8_t> buffer) const noexcept final;
+
  public:
   std::string task_file{""};
   bool load_archive_as_render_mode{true};

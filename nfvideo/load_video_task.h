@@ -9,6 +9,7 @@
 #include <newton_render.h>
 #include <video_utils.h>
 #include <tl/expected.hpp>
+#include <set>
 
 class video_executor;
 
@@ -32,11 +33,16 @@ class compute_task : public fractal_utils::compute_task_base {
   friend class video_executor;
 
  public:
+  std::set<int> no_check_frames;
+
   [[nodiscard]] fu::wind_base *start_window() noexcept final {
     return this->related_ci->metadata.window();
   }
   [[nodiscard]] const fu::wind_base *start_window() const noexcept final {
     return this->related_ci->metadata.window();
+  }
+  [[nodiscard]] bool need_check_frame(int frameid) const noexcept {
+    return !this->no_check_frames.contains(frameid);
   }
   //  std::variant<thin_compute_objs, nf::meta_data::non_compute_info>
   //      thin_metainfo;

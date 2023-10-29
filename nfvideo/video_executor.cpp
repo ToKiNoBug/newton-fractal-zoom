@@ -3,6 +3,24 @@
 #include <newton_archive.h>
 #include <newton_render.h>
 #include <omp.h>
+#include <ranges>
+
+std::vector<uint8_t> video_executor::compute_task_status(
+    std::string &buf_filename, std::any &buf_archive,
+    std::span<uint8_t> buffer) const noexcept {
+  auto result = fu::video_executor_base::compute_task_status(
+      buf_filename, buf_archive, buffer);
+  for (size_t fidx = 0; fidx < result.size(); fidx++) {
+    const auto &ct = dynamic_cast<compute_task &>(*this->m_task.compute);
+    if (!result[fidx]) {
+      if (!ct.need_check_frame(fidx)) {
+        result[fidx] = 1;
+        fmt::println("Skipped computation of frame {}", fidx);
+      }
+    }
+  }
+  return result;
+}
 
 void video_executor::compute(int archive_idx, const fu::wind_base &window,
                              std::any &ret) const noexcept {

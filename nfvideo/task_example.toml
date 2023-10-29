@@ -8,6 +8,7 @@ threads = 20
 archive_prefix = "@CMAKE_CURRENT_BINARY_DIR@/archive/"
 archive_suffix = ""
 archive_extension = "nfar.zst"
+no_check_frames = [0, 1, 3, 4, 5]
 
 [render]
 threads = 20

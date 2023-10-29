@@ -9,7 +9,7 @@ add_executable(nfvideo
     load_video_task.cpp
     video_executor.h
     video_executor.cpp
-    )
+)
 
 target_link_libraries(nfvideo PRIVATE
     fractal_utils::video_utils
@@ -22,7 +22,7 @@ target_include_directories(nfvideo PRIVATE
 
 
 set(example_task_file "${CMAKE_SOURCE_DIR}/compute_tasks/double-p3.json")
-set(example_render_json_file "${CMAKE_SOURCE_DIR}/render_jsons/plasma-9.json")
+set(example_render_json_file "${CMAKE_SOURCE_DIR}/render_jsons/plasma-10.json")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/task_example.toml
     ${CMAKE_CURRENT_BINARY_DIR}/nfvideo.toml

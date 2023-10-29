@@ -104,6 +104,16 @@ compute_task parse_ct(const toml::table *tbl) noexcept(false) {
   ct.archive_suffix = tbl->at("archive_suffix").value<std::string>().value();
   ct.archive_extension =
       tbl->at("archive_extension").value<std::string>().value();
+  if (tbl->contains("no_check_frames")) {
+    auto arrp = tbl->at("no_check_frames").as_array();
+    if (arrp == nullptr) {
+      throw std::runtime_error{
+          fmt::format("no_check_frames\" should be array.")};
+    }
+    for (auto &val : *arrp) {
+      ct.no_check_frames.emplace(val.value<int>().value());
+    }
+  }
   return ct;
 }
 
