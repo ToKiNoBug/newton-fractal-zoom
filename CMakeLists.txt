@@ -33,6 +33,7 @@ if (MPC_FOUND OR LINUX)
 endif ()
 
 option(NF_USE_CUDA "Enable cuda support" ON)
+set(NF_VECTORIZE_IS "FMA;AVX;AVX2" CACHE STRING "Instruction sets used by vectorization")
 
 #if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 #    set(CMAKE_CUDA_COMPILER ${CMAKE_CXX_COMPILER})
@@ -48,19 +49,20 @@ if (${NF_USE_CUDA})
     if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
     endif ()
+    add_compile_definitions("NF_USE_CUDA=1")
 endif ()
-add_compile_definitions("NF_USE_CUDA=1")
 #set(CMAKE_CLANG)
 
 add_compile_definitions("NEWTON_FRACTAL_VERSION_STR=\"${PROJECT_VERSION}\"")
 
 enable_testing()
 
-if (${MSVC})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX /arch:AVX2")
-else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mavx2 -mfma")
-endif ()
+include(cmake/translate_vectorize_flags.cmake)
+
+NF_translate_vec_flags(NF_VECTORIZE_IS vec_flags)
+message("Vectorization flags: ${vec_flags}")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${vec_flags}")
 
 add_subdirectory(newton)
 add_subdirectory(newton_archive)
