@@ -13,14 +13,24 @@ add_library(newton_fractal STATIC
     object_creator.cpp
     object_creator.h
 
-    cuda_support.cu
     cuda_support.cuh
-    cuda_support.cpp
 
     OpenCL_support.cpp
     OpenCL_support.h
     #newton_fractal_computation.cl
+)
+
+if (${NF_USE_CUDA})
+    target_sources(newton_fractal
+        PRIVATE
+        cuda_support.cu
+        cuda_support.cpp
     )
+else ()
+    target_sources(newton_fractal
+        PRIVATE
+        cuda_support_nocuda.cpp)
+endif ()
 
 target_compile_features(newton_fractal PUBLIC cxx_std_20)
 
@@ -50,7 +60,7 @@ message("OpenCL_INCLUDE_DIR = ${OpenCL_INCLUDE_DIR}")
 
 find_file(opencl_hpp_file opencl.hpp
     PATHS "${OpenCL_INCLUDE_DIR}/CL"
-    )
+)
 if (opencl_hpp_file)
     target_compile_definitions(newton_fractal PRIVATE NF_HAS_OPENCL_HPP=true)
 else ()
@@ -70,7 +80,7 @@ target_link_libraries(newton_fractal PUBLIC
     magic_enum::magic_enum
     OpenCL::OpenCL
     cl_source_file_resource
-    )
+)
 
 target_include_directories(newton_fractal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(newton_fractal PUBLIC

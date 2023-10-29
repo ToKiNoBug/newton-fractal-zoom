@@ -9,12 +9,23 @@ add_library(newton_render STATIC
     cpu_renderer.cpp
     cpu_renderer.h
 
-    NF_cuda_macros.hpp
-    render_config_gpu_impl.cu
+    gpu_interface.h)
 
-    gpu_interface.h
-    gpu_internal.h
-    gpu_impl.cu)
+if (${NF_USE_CUDA})
+    target_sources(newton_render
+        PRIVATE
+
+        NF_cuda_macros.hpp
+        render_config_gpu_impl.cu
+
+        gpu_internal.h
+        gpu_impl.cu
+    )
+else ()
+    target_sources(newton_render
+        PRIVATE
+        gpu_interface_nogpu.cpp)
+endif ()
 
 target_link_libraries(newton_render PUBLIC
     #newton_fractal

@@ -103,9 +103,11 @@ __global__ void run_computation_shared_mem(
 }
 
 template <typename float_t>
-static __constant__ thrust::complex<float_t> const_points[255];
+__constant__ thrust::complex<float_t> const_points[255];
 template <typename float_t>
-static __constant__ thrust::complex<float_t> const_parameters[255];
+__constant__ thrust::complex<float_t> const_parameters[255];
+
+__constant__ char const_chars[128];
 
 template <typename float_t>
 std::mutex const_memory_lock;
@@ -270,12 +272,32 @@ class cuda_equation_impl : public cuda_computer<float_t> {
   }
 
   static bool check_constant_memory() {
+    {
+      int device = -10;
+      auto err = cudaGetDevice(&device);
+      if (err != cudaSuccess) {
+        return false;
+      }
+      cudaDeviceProp prop{};
+      err = cudaGetDeviceProperties(&prop, device);
+      if (err != cudaSuccess) {
+        return false;
+      }
+    }
+
+    void *address = nullptr;
+    {
+      auto err = cudaGetSymbolAddress(&address, internal::const_chars);
+      if (err != cudaSuccess) {
+        return false;
+      }
+    }
     auto err =
-        cudaGetSymbolAddress(nullptr, internal::const_parameters<float_t>);
+        cudaGetSymbolAddress(&address, internal::const_parameters<float_t>);
     if (err != cudaSuccess) {
       return false;
     }
-    err = cudaGetSymbolAddress(nullptr, internal::const_points<float_t>);
+    err = cudaGetSymbolAddress(&address, internal::const_points<float_t>);
     if (err != cudaSuccess) {
       return false;
     }
