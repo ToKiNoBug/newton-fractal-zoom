@@ -686,8 +686,14 @@ object_creator::create(fractal_utils::float_backend_lib backend, int precision,
   }
 
   switch (backend) {
-    case fu::float_backend_lib::standard:
+#ifndef NF_USE_QUADMATH
     case fu::float_backend_lib::quadmath:
+      return tl::make_unexpected(
+          fmt::format("NewtonFractal is not built with quadmath."));
+#else
+    case fu::float_backend_lib::quadmath:
+#endif
+    case fu::float_backend_lib::standard:
     case fu::float_backend_lib::boost: {
       object_creator* ret = nullptr;
       switch (precision) {
