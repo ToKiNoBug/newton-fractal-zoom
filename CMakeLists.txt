@@ -14,6 +14,9 @@ endif ()
 #add_compile_options(-pg)
 #add_link_options(-pg)
 
+option(NF_USE_QUADMATH "Enable GNU quadmath" OFF)
+option(NF_USE_CUDA "Enable cuda support" ON)
+set(NF_VECTORIZE_IS "FMA;AVX;AVX2" CACHE STRING "Instruction sets used by vectorization")
 
 include(cmake/configure_3rdParty.cmake)
 
@@ -33,9 +36,6 @@ if (MPC_FOUND OR LINUX)
     set(NF_mpc_support ON)
 endif ()
 
-option(NF_USE_QUADMATH "Enable GNU quadmath" OFF)
-option(NF_USE_CUDA "Enable cuda support" ON)
-set(NF_VECTORIZE_IS "FMA;AVX;AVX2" CACHE STRING "Instruction sets used by vectorization")
 
 #if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 #    set(CMAKE_CUDA_COMPILER ${CMAKE_CXX_COMPILER})

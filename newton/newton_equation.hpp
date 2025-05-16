@@ -25,6 +25,11 @@
 #include <quadmath.h>
 #endif
 
+#if defined(NF_USE_QUADMATH) not_eq defined(FU_USE_QUADMATH)
+#error \
+    "Only one of NF_USE_QUADMATH and FU_USE_QUADMATH is defined, quadmath option for fractal_utils and newton_fractal is conflcting"
+#endif
+
 namespace fu = fractal_utils;
 
 namespace newton_fractal {
