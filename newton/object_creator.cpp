@@ -3,8 +3,9 @@
 //
 
 #include "object_creator.h"
-#include <magic_enum.hpp>
+#include <nlohmann/json.hpp>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 #include "newton_equation.hpp"
 #include "cuda_support.cuh"
 #include "OpenCL_support.h"

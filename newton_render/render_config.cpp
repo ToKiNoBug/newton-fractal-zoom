@@ -2,7 +2,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include "newton_render.h"
 
 using njson = nlohmann::json;

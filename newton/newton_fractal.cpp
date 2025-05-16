@@ -1,6 +1,7 @@
 #include "newton_fractal.h"
 #include <fmt/format.h>
-#include <magic_enum.hpp>
+#include <nlohmann/json.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <memory>
 #include <iterator>
 #include <fstream>

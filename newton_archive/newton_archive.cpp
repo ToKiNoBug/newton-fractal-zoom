@@ -10,7 +10,8 @@
 #include <boost/iostreams/filter/zstd.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
-#include <magic_enum.hpp>
+#include <nlohmann/json.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace stdfs = std::filesystem;
 

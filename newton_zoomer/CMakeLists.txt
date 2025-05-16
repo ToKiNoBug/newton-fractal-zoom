@@ -28,7 +28,7 @@ qt_add_translations(nfzoom
     SOURCES ${nfzoom_sources}
     INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}
     TS_FILES others/nfzoom_zh_CN.ts
-    OUTPUT_TARGETS nfzoom_translation_targets
+    #    OUTPUT_TARGETS nfzoom_translation_targets
     LUPDATE_OPTIONS -no-obsolete -locations relative -no-recursive
 )
 target_link_libraries(nfzoom PRIVATE
@@ -49,7 +49,7 @@ add_executable(nfzoom_launcher
 qt_add_translations(nfzoom_launcher
     SOURCES ${nfzoom_launcher_sources}
     TS_FILES others/nfzoom_launcher_zh_CN.ts
-    OUTPUT_TARGETS nfzoom_launcher_translation_targets
+    #    OUTPUT_TARGETS nfzoom_launcher_translation_targets
     LUPDATE_OPTIONS -no-obsolete -locations relative
 )
 
