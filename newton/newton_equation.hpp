@@ -21,19 +21,11 @@
 #include <sstream>
 #include "computation.hpp"
 
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
 #include <quadmath.h>
 #endif
 
 namespace fu = fractal_utils;
-/*
-#ifdef __GNUC__
-inline std::ostream& operator<<(__float128 number, std::ostream& os) noexcept {
-  os << double(number);
-}
-#endif
-
-*/
 
 namespace newton_fractal {
 
@@ -74,14 +66,14 @@ std::optional<real_t> decode(const njson& nj) noexcept {
       bin.resize(len.value());
       return fractal_utils::decode_float<real_t>(bin);
     } else {
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
       constexpr bool is_quadmath = std::is_same_v<real_t, __float128>;
 #else
       constexpr bool is_quadmath = false;
 #endif
 
       if constexpr (is_quadmath) {
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
         char* p_end = nullptr;
         __float128 ret = strtoflt128(str.c_str(), &p_end);
         return ret;
@@ -110,7 +102,7 @@ void format_complex(const complex_t& z, std::ostream& os) noexcept {
   os << z.imag() << 'i';
 }
 
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
 inline void format_complex(const std::complex<__float128>& z,
                            std::ostream& os) noexcept {
   os << double(z.real());
@@ -170,7 +162,7 @@ njson save_float_by_format(const float_t& number, float_save_format fsf,
     }
     case float_save_format::formatted_string: {
       ss.clear();
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
       constexpr bool is_quadmath = std::is_same_v<float_t, __float128>;
 #else
       constexpr bool is_quadmath = false;

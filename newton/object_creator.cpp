@@ -39,7 +39,7 @@ tl::expected<void, std::string> is_valid_option(
     }
 
     case fu::float_backend_lib::quadmath: {
-#ifdef __GNUC__
+#ifdef NF_USE_QUADMATH
       if (precision == 4) {
         return {};
       } else {

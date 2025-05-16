@@ -87,7 +87,9 @@ target_include_directories(newton_fractal PUBLIC
     ${NF_cli11_include_dir}
     ${NF_njson_include_dir})
 
-if ((${LINUX}) OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"))
+if (${NF_USE_QUADMATH})
+    target_compile_definitions(newton_fractal PUBLIC "NF_USE_QUADMATH=1")
+    #if ((${LINUX}) OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"))
     target_link_libraries(newton_fractal PUBLIC quadmath)
 endif ()
 

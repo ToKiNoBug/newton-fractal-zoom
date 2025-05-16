@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 project(newton_fractal_zoom VERSION 0.6.1)
 
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (${MSVC})
@@ -32,6 +33,7 @@ if (MPC_FOUND OR LINUX)
     set(NF_mpc_support ON)
 endif ()
 
+option(NF_USE_QUADMATH "Enable GNU quadmath" OFF)
 option(NF_USE_CUDA "Enable cuda support" ON)
 set(NF_VECTORIZE_IS "FMA;AVX;AVX2" CACHE STRING "Instruction sets used by vectorization")
 
