@@ -1,7 +1,7 @@
 #include "tasks.h"
 #include <newton_archive.h>
 #include <fmt/format.h>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <fstream>
 
 void print_meta_info(const nf::meta_data&) noexcept;

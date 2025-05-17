@@ -4,7 +4,7 @@
 
 #include "newton_fractal.h"
 #include "object_creator.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <fmt/format.h>
 
 int main(int argc, char** argv) {

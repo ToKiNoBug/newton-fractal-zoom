@@ -1,5 +1,5 @@
 #include "tasks.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <newton_fractal.h>
 #include <fmt/format.h>
 #include <fstream>

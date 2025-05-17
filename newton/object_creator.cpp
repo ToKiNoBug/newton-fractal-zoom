@@ -111,6 +111,11 @@ class object_creator_default_impl : public object_creator {
   using real_type = real_t;
   using complex_type = complex_t;
 
+#ifndef NF_USE_QUADMATH
+  static_assert(not std::is_same_v<real_t, __float128>,
+                "Using quadmath without quadmath support");
+#endif
+
   static constexpr char dynamic_precision_hex_seperator = ',';
 
   [[nodiscard]] fractal_utils::float_backend_lib backend_lib()
